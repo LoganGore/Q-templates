@@ -24,11 +24,14 @@ In `package.json`, edit the metadata:
 - Define your public-facing schema in a single GraphQL file in the root, e.g., `sample.gql`, which contains the common patterns:
 
 ```graphql
+scalar Date
+
+scalar JSON
+
 type Person {
   # Kind fields
   id: ID! # internal identifier (unique)
   name: String! # external identifier (non-unique)
-  
   # Domain-specific fields
   givenName: String
   familyName: String
@@ -38,8 +41,17 @@ type Person {
 # Create a Person instance
 input AddPersonInput {
   id: ID # if known, otherwise one will be generated
-  # these are all optional, but the resolver(s)
-  # must produce a 'name' value, since it is required
+  # these are all optional, but the resolver(s) must produce a 'name' value, since it is required
+  name: String
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+# Create a Person instance
+input UpdatePersonInput {
+  id: ID! # required
+  # only what is changing
   name: String
   givenName: String
   familyName: String
@@ -55,7 +67,7 @@ type Query {
   personsByName(name: String!): [Person]
   personsByDateOfBirth(date: Date!): [Person]
   # KindDB query
-  personQuery(query: KindQuery): [Person]
+  personQuery(query: KindQueryInput): [Person]
 }
 
 # Standard mutations (instance and batch)
@@ -65,7 +77,7 @@ type Mutation {
   updatePerson(input: UpdatePersonInput): ID
   updatePersons(input: [UpdatePersonInput!]!): [ID]
   deletePerson(id: ID!): Person
-  deletePersons(ids: [ID!]!): [Person]    
+  deletePersons(ids: [ID!]!): [Person]
 }
 
 # Standard events
