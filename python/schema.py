@@ -1,6 +1,5 @@
 import graphene
 import resolvers
-import handlers
 
 
 class Info(graphene.ObjectType):
@@ -44,19 +43,4 @@ class AddEmployee(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     add_employee = AddEmployee.Field()
 
-
-class FileAdded(graphene.ObjectType):
-    id = graphene.String()
-    name = graphene.String()
-    mimeType = graphene.String()
-    size = graphene.Int()
-
-
-class Subscription(graphene.ObjectType):
-    fileAdded = graphene.Field(FileAdded)
-
-    def resolve_fileAdded(self, _, x):
-        return handlers.handle_file(x)
-
-
-schema = graphene.Schema(query=Query, mutation=Mutation, subscription=Subscription)
+schema = graphene.Schema(query=Query, mutation=Mutation)

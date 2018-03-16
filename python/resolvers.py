@@ -1,6 +1,8 @@
 import os
 import uuid
+import json
 import schema
+import asyncio
 from shared.kinddbsvc.KindDBSvc import KindDBSvc
 
 kindDB = KindDBSvc(0, os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql'))
@@ -36,3 +38,19 @@ async def add_employee(employee):
     )
 
     return new_employee
+
+
+# Handlers
+
+async def handle(event):
+
+    parsed_event = json.loads(event)
+
+    if "linkAdded" in parsed_event.keys():
+        return await handle_file(parsed_event)
+
+
+async def handle_file(blob):
+    # This is where you'd make more complicated logic to handle events
+    await asyncio.sleep(1.)
+    return blob
