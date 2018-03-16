@@ -24,6 +24,7 @@ async def handle_event(x):
             data['invalid'] = result.invalid
     except:
         print("Return was malformed: " + result)
+        pass
     print(json.dumps(data))
     return None
 
