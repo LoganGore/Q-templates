@@ -1,7 +1,7 @@
 import os
 import uuid
 import schema
-from shared.KindDBSvc import KindDBSvc
+from shared.kinddbsvc.KindDBSvc import KindDBSvc
 
 kindDB = KindDBSvc(0, os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql'))
 
