@@ -4,9 +4,7 @@ import json
 import uuid
 import schema
 import logging
-from shared.kinddbsvc.KindDBSvc import KindDBSvc
 
-kindDB = KindDBSvc(0, os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql'))
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 

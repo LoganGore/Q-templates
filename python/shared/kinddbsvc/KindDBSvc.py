@@ -3,6 +3,7 @@ import sys
 import json
 import string
 import logging
+import asyncio
 import aiohttp
 
 KINDDB_SERVICE_URL = os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql')
@@ -192,7 +193,7 @@ class KindDBSvc:
         else:
             pass
 
-    def __init__(self, tenantId, loop, svcUrl = KINDDB_SERVICE_URL):
+    def __init__(self, tenantId, loop=asyncio.get_event_loop(), svcUrl=KINDDB_SERVICE_URL):
 
         self.loop = loop
         if tenantId is None or len(str(tenantId).strip()) == 0:
@@ -210,6 +211,7 @@ class KindDBSvc:
             self.session = aiohttp.ClientSession(loop=loop)
         except Exception as e:
             logger.error(e)
+            sys.exit(-1)
 
     async def getKind(self, kindId, kindName):
         query = string.Template(
