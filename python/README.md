@@ -14,9 +14,8 @@ python server.py
 
 ## Queries to try
 
-
-
 Adds an employee:
+
     ```
     curl -XPOST http://localhost:7357/graphql -H 'Content-Type: application/json' -d '{"query": "mutation M { addEmployee: addEmployee(id: \"asdf\", name: \"bob\") { name } }"}'
     ```

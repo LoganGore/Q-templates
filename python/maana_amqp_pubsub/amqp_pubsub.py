@@ -1,12 +1,7 @@
-import sys
 from .subscriber import AMQPSubscriber
 from .connection_factory import AMQPConnectionFactory
 from .configuration import QueueConfig
 import asyncio
-import logging
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 class AmqpPubSub:
@@ -14,6 +9,7 @@ class AmqpPubSub:
     def __init__(self, config, trigger_transform=lambda x: str(x)):
 
         self.trigger_transform = trigger_transform
+
         self.config = config
 
         factory = AMQPConnectionFactory(config)
@@ -36,7 +32,8 @@ class AmqpPubSub:
         else:
             disposer = asyncio.ensure_future(self.consumer.subscribe(
                 QueueConfig(trigger_name, self.config.service),
-                lambda msg: self.on_message(trigger_name, msg)
+                lambda msg: self.on_message(trigger_name, msg),
+                self.current_sub_id
             ))
             if trigger_name in self.subs_ref_map.keys():
                 self.subs_ref_map[trigger_name] = self.subs_ref_map[trigger_name].append(self.current_sub_id)
@@ -46,7 +43,7 @@ class AmqpPubSub:
             self.unsubscribe_channel = disposer
             return self.current_sub_id
 
-    async def on_message(self, channel, message):
+    def on_message(self, channel, message):
         subscribers = self.subs_ref_map.get(channel)
 
         if subscribers is None:
@@ -55,7 +52,7 @@ class AmqpPubSub:
         for index, elem in enumerate(subscribers):
             executor = self.subscription_map[index+1]
             try:
-                await executor[1](message)
+                executor[1](message)
             except Exception as e:
-                logger.error("Problem running handler on event: " + str(e))
+                print("Problem running handler on event: " + str(e))
                 pass

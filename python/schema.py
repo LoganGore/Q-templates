@@ -43,4 +43,12 @@ class AddEmployee(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     add_employee = AddEmployee.Field()
 
+
+class FileAdded(graphene.ObjectType):
+    id = graphene.String()
+    name = graphene.String()
+    mimeType = graphene.String()
+    size = graphene.Int()
+
+
 schema = graphene.Schema(query=Query, mutation=Mutation)

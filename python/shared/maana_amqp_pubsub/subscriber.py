@@ -1,10 +1,10 @@
-from .connection_factory import AMQPConnectionFactory
-from .configuration import QueueConfig
-from aio_pika import connect, IncomingMessage, ExchangeType
+from aio_pika import ExchangeType
 import sys
-import json
 import asyncio
+import logging
 
+logger = logging.getLogger(__name__)
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 class AMQPSubscriber:
 
@@ -20,7 +20,7 @@ class AMQPSubscriber:
 
     async def subscribe_to_channel(self, channel, queue_config, action):
         async def callback(message):
-            print(message.body)
+            logger.debug(message.body)
             try:
                 await action(message.body)
                 message.ack()
@@ -39,5 +39,5 @@ class AMQPSubscriber:
             await queue.bind(exchange, "")
             return queue
         except Exception as e:
-            print(e)
+            logger.error(e)
             sys.exit(-1)

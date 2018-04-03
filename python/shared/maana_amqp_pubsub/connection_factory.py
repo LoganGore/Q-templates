@@ -1,6 +1,10 @@
 from .configuration import AmqpConnectionConfig
 from aio_pika import connect
 import sys
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 class AMQPConnectionFactory:
@@ -13,5 +17,5 @@ class AMQPConnectionFactory:
             connection = await connect(self.connection)
             return connection
         except Exception as e:
-            print(e)
+            logger.error(e)
             sys.exit(-1)

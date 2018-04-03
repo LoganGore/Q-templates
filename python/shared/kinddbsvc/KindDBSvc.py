@@ -1,8 +1,8 @@
 import os
+import sys
 import json
-import requests
 import string
-import asyncio
+import logging
 import aiohttp
 
 KINDDB_SERVICE_URL = os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql')
@@ -107,6 +107,35 @@ kindId
     }
   """
 
+LinkDetailsFragment = """
+    id
+    relation {
+      id
+    }
+    fromKind {
+      id
+    }
+    toKind {
+      id
+    }
+    fromInstance {
+      id
+    }
+    toInstance {
+      id
+    }
+    name
+    weight
+    fromOffset
+    fromSpan
+    toOffset
+    toSpan
+"""
+
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
 
 class KindDBSvc:
 
@@ -163,7 +192,9 @@ class KindDBSvc:
         else:
             pass
 
-    def __init__(self, tenantId, svcUrl = KINDDB_SERVICE_URL):
+    def __init__(self, tenantId, loop, svcUrl = KINDDB_SERVICE_URL):
+
+        self.loop = loop
         if tenantId is None or len(str(tenantId).strip()) == 0:
             raise ValueError("Missing argument: tenantId")
         else:
@@ -175,7 +206,10 @@ class KindDBSvc:
             self.svcUrl = svcUrl
 
         self.headers = {"Content-Type": "application/json"}
-        self.session = aiohttp.ClientSession()
+        try:
+            self.session = aiohttp.ClientSession(loop=loop)
+        except Exception as e:
+            logger.error(e)
 
     async def getKind(self, kindId, kindName):
         query = string.Template(
@@ -195,8 +229,12 @@ class KindDBSvc:
             "query": query.safe_substitute(kindFragment=kindDetailsFragment),
             "variables": variables
         }
+        logger.info("getKind kn: {} kid: {}".format(kindName, kindId))
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
         out = await resp.json()
+        if out["data"]["kind"] is None:
+            logger.error("No data received from kindDB")
+            raise RuntimeError("No data received from kindDB")
         self._check_response(out)
         return out["data"]
 
@@ -242,6 +280,29 @@ class KindDBSvc:
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
         out = await resp.json()
+        logger.info("getInstance kn: {} kid: {}".format(kindName, kindId))
+        self._check_response(out)
+        return out["data"]
+
+    async def getLink(self, linkId):
+        query = string.Template("""
+            query($tenantId: ID!, $id: ID!) {
+                link(tenantId: $tenantId, id: $id) {
+                  $linkDetailsFragment
+                }
+              }
+        """)
+        variables = {
+            "tenantId": self.tenantId,
+            "id": linkId
+        }
+        to_post = {
+            "query": query.safe_substitute(linkDetailsFragment=LinkDetailsFragment),
+            "variables": variables
+        }
+        resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
+        out = await resp.json()
+        logger.info("getLink id: {}".format(linkId))
         self._check_response(out)
         return out["data"]
 
@@ -271,7 +332,7 @@ class KindDBSvc:
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
         out = await resp.json()
-        print("getAllInstances kn: {} kid: {}".format(kindName, kindId))
+        logger.info("getAllInstances kn: {} kid: {}".format(kindName, kindId))
         self._check_response(out)
         return out["data"]
 
@@ -295,6 +356,21 @@ class KindDBSvc:
         return out["data"]
 
     async def addInstanceByKindName(self, kindName, instance):
-        kind = await self.getKind(kindId=None, kindName=kindName)
-        input = self._object_to_addInstanceInput(kind, instance)
-        return await self.addInstance(input)
+        try:
+            kind = await self.getKind(kindId=None, kindName=kindName)
+            input = self._object_to_addInstanceInput(kind, instance)
+            return await self.addInstance(input)
+        except Exception as e:
+            logger.error(e)
+            logger.error("Unable to get kind {} ".format(kindName))
+            return None
+
+    async def addInstanceByKindId(self, kindId, instance):
+        try:
+            kind = await self.getKind(kindId=kindId, kindName=None)
+            input = self._object_to_addInstanceInput(kind, instance)
+            return await self.addInstance(input)
+        except Exception as e:
+            logger.error(e)
+            logger.error("Unable to get kind {} ".format(kindId))
+            return None
