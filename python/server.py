@@ -25,7 +25,7 @@ async def handle_event(x):
     await handle(data_in)
     return None
 
-
+  
 async def init(loopy):
     app = web.Application(loop=loopy)
 

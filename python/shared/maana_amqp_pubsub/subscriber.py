@@ -6,7 +6,6 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
-
 class AMQPSubscriber:
 
     def __init__(self, connection_factory):

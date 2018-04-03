@@ -2,6 +2,12 @@
 
 This is a template for creating a Maana Knowledge Service in Python. This requires python 3.6+
 
+## Installation
+
+To install the python packages required, run this:
+
+pip install -r requirements.txt
+
 ## Starting
 
 python server.py

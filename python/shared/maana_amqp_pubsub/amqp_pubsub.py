@@ -14,7 +14,6 @@ class AmqpPubSub:
     def __init__(self, config, trigger_transform=lambda x: str(x)):
 
         self.trigger_transform = trigger_transform
-
         self.config = config
 
         factory = AMQPConnectionFactory(config)

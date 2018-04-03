@@ -187,7 +187,6 @@ class KindDBSvc:
         return addInstanceInput
 
     def _check_response(self, json_resp):
-
         if 'errors' in json_resp.keys():
             raise RuntimeError(json_resp['errors'])
         else:
@@ -196,7 +195,6 @@ class KindDBSvc:
     def __init__(self, tenantId, loop, svcUrl = KINDDB_SERVICE_URL):
 
         self.loop = loop
-
         if tenantId is None or len(str(tenantId).strip()) == 0:
             raise ValueError("Missing argument: tenantId")
         else:
