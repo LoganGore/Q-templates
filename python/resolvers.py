@@ -26,7 +26,7 @@ async def all_employees():
     base = employee_res.get("allInstances")
     employees = []
     if base is not None:
-        records = base.get["records"]
+        records = base.get("records")
         for r in records:
             employees.append(schema.Employee(id=r[0].get("ID"), name=r[1].get("STRING")))
     return employees
