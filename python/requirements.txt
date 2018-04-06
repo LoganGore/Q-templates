@@ -26,6 +26,7 @@ multidict==4.1.0
 pika==0.11.2
 promise==2.1
 pytest-runner==4.0
+python-dotenv==0.8.2
 redis==2.10.6
 requests==2.18.4
 Rx==1.6.1
