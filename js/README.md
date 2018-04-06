@@ -1,11 +1,14 @@
 # JavaScript Knowledge Service Template
+
 For the latest version, please visit the [Maana Knowledge Service Teamplate repository](https://github.com/maana-io/h4-ksvc-templates).
 
 ## Layout
+
 @@TODO
 
 ## Customization
-- Change the name and description of the module
+
+* Change the name and description of the module
 
 In `package.json`, edit the metadata:
 
@@ -20,8 +23,8 @@ In `package.json`, edit the metadata:
   "repository": "ssh://git@github.com:maana-io/h4-ksvc-templates.git",
 ```
 
-- Edit the `.env` file to reflect proper `PORT`, `SERVICE_ID`, and other service-specific parameters.
-- Define your public-facing schema in a single GraphQL file in the root, e.g., `sample.gql`, which contains the common patterns:
+* Edit the `.env` file to reflect proper `PORT`, `SERVICE_ID`, and other service-specific parameters.
+* Define your public-facing schema in a single GraphQL file in the root, e.g., `sample.gql`, which contains the common patterns:
 
 ```graphql
 scalar Date
@@ -60,14 +63,13 @@ input UpdatePersonInput {
 
 # Standard queries (instance and batch)
 type Query {
+  info: Info
   # unique people
   person(id: ID!): Person
   persons(ids: [ID!]!): [Person] # order preserved
   # specialized queries
   personsByName(name: String!): [Person]
   personsByDateOfBirth(date: Date!): [Person]
-  # KindDB query
-  personQuery(query: KindQueryInput): [Person]
 }
 
 # Standard mutations (instance and batch)
@@ -111,8 +113,8 @@ type Subscription {
 }
 ```
 
-- Define an **internal** GraphQL schema, typically the result of a **merge** and place it in the source root as `/src/schema.gql`.
-- ​
+* Define an **internal** GraphQL schema, typically the result of a **merge** and place it in the source root as `/src/schema.gql`.
+* ​
 
 ## Build setup
 
@@ -128,23 +130,23 @@ type Subscription {
 
 ## Logging
 
-In some attempt to provide coherent and standard logging, I developed at least a funnel through which we could eventually connect proper logging.  (There are several good ones, but we need to coordinate our selection with the containerization and deployment models involved.)
+In some attempt to provide coherent and standard logging, I developed at least a funnel through which we could eventually connect proper logging. (There are several good ones, but we need to coordinate our selection with the containerization and deployment models involved.)
 
 But instead of adding 'console.log', it is suggested to use the `io.maana.shared` utility: `log` [(source code)](/repo/ksvcs/packages/maana-shared/src/log.js), which provides a simple wrapper providing:
 
-- a uniform log output format
-  - module identity: `id`
-  - time?
-  - level (`info`,`warn`,`error`)
-  - formatted values and indicators
-- semantic argument formatters
-  - module identity: `id`
-  - `external` data (e.g., names)
-  - `internal` data (e.g., uuids)
-  - `info` data (i.e., values)
-  - `true` and `false` and `bool` values
-  - `json` objects
-- colorization using [chalk](https://github.com/chalk/chalk)
+* a uniform log output format
+  * module identity: `id`
+  * time?
+  * level (`info`,`warn`,`error`)
+  * formatted values and indicators
+* semantic argument formatters
+  * module identity: `id`
+  * `external` data (e.g., names)
+  * `internal` data (e.g., uuids)
+  * `info` data (i.e., values)
+  * `true` and `false` and `bool` values
+  * `json` objects
+* colorization using [chalk](https://github.com/chalk/chalk)
 
 ### Setup
 
@@ -177,10 +179,10 @@ Or, if you wish to convey more meaning in your logging:
 
 ```javascript
 log(SELF).info(
-      `uploading ${print.external(req.uploadFileName)} to ${print.internal(
-        req.uploadDir
-      )}` + (partIndex ? ` part: ${print.info(partIndex)}` : '')
-    )
+  `uploading ${print.external(req.uploadFileName)} to ${print.internal(
+    req.uploadDir
+  )}` + (partIndex ? ` part: ${print.info(partIndex)}` : '')
+)
 ```
 
-It seemed worth establishing a common way to do logging.  We can improve or change it, but we should have one.
+It seemed worth establishing a common way to do logging. We can improve or change it, but we should have one.

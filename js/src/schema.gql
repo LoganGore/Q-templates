@@ -1,0 +1,90 @@
+scalar Date
+
+scalar JSON
+
+type Info {
+  id: ID!
+  name: String!
+  description: String
+}
+
+type Person {
+  # Kind fields
+  id: ID! # internal identifier (unique)
+  name: String! # external identifier (non-unique)
+  # Domain-specific fields
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+# Create a Person instance
+input AddPersonInput {
+  id: ID # if known, otherwise one will be generated
+  # these are all optional, but the resolver(s) must produce a 'name' value, since it is required
+  name: String
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+# Create a Person instance
+input UpdatePersonInput {
+  id: ID! # required
+  # only what is changing
+  name: String
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+# Standard queries (instance and batch)
+type Query {
+  info: Info
+  # unique people
+  person(id: ID!): Person
+  persons(ids: [ID!]!): [Person] # order preserved
+  # specialized queries
+  personsByName(name: String!): [Person]
+  personsByDateOfBirth(date: Date!): [Person]
+}
+
+# Standard mutations (instance and batch)
+type Mutation {
+  addPerson(input: AddPersonInput): ID
+  addPersons(input: [AddPersonInput!]!): [ID]
+  updatePerson(input: UpdatePersonInput): ID
+  updatePersons(input: [UpdatePersonInput!]!): [ID]
+  deletePerson(id: ID!): Person
+  deletePersons(ids: [ID!]!): [Person]
+}
+
+# Standard events
+type PersonAddedEvent {
+  id: ID!
+  name: String!
+}
+
+type PersonUpdatedEvent {
+  id: ID!
+  name: String!
+  # only what changed
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+type PersonDeletedEvent {
+  id: ID!
+  name: String!
+  # only what was known
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+type Subscription {
+  personAdded: PersonAddedEvent!
+  personUpdated: PersonUpdatedEvent!
+  personDeleted: PersonDeletedEvent!
+}
