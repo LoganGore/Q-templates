@@ -5,20 +5,11 @@ import json
 import logging
 import asyncio
 import sys
-import os
 from jinja2 import Environment
 from shared.graphiql import GraphIQL
 from resolvers import handle
 from shared.maana_amqp_pubsub import amqp_pubsub, configuration
-
-# DEFINE SERVER AND PORT:
-SERV_ADDRESS = '127.0.0.1'
-PORT = 7357
-SERVICE_NAME = "io.maana.MPT"
-
-KINDDB_SERVICE_URL = os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql')
-RABBITMQ_ADDR = os.getenv('RABBITMQ_ADDR', '127.0.0.1')
-RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', '5672')
+from settings import SERVICE_ID, SERVICE_PORT, RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ADDRESS
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -69,12 +60,12 @@ async def init(loopy):
     app.router.add_route('*', handler=gql_view, path="/graphiql", name='graphiql')
 
     try:
-        serv = await loopy.create_server(app.make_handler(), SERV_ADDRESS, PORT)
+        serv = await loopy.create_server(app.make_handler(), SERVICE_ADDRESS, SERVICE_PORT)
     except Exception as e:
         logger.error(e)
         sys.exit(-1)
 
-    logging.info("Started server on {}:{}".format(SERV_ADDRESS, PORT))
+    logging.info("Started server on {}:{}".format(SERVICE_ADDRESS, SERVICE_PORT))
     return serv
 
 
@@ -82,7 +73,7 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(
     asyncio.gather(
         asyncio.ensure_future(init(loop)),
-        asyncio.ensure_future(amqp_pubsub.AmqpPubSub(configuration.AmqpConnectionConfig(RABBITMQ_ADDR, RABBITMQ_PORT, "MPT")).
+        asyncio.ensure_future(amqp_pubsub.AmqpPubSub(configuration.AmqpConnectionConfig(RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ID)).
                               subscribe("linkAdded", lambda x: handle_event(x)))
     )
 )

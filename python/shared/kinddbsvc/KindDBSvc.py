@@ -1,12 +1,10 @@
-import os
 import sys
 import json
 import string
 import logging
 import asyncio
 import aiohttp
-
-KINDDB_SERVICE_URL = os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql')
+from settings import KINDDB_SERVICE_URL
 
 kindDetailsFragment = """
 id
