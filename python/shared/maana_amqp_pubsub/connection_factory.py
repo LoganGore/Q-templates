@@ -17,5 +17,5 @@ class AMQPConnectionFactory:
             connection = await connect(self.connection)
             return connection
         except Exception as e:
-            logger.error(e)
-            sys.exit(-1)
+            logger.warning(e)
+            pass

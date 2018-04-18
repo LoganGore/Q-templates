@@ -9,7 +9,7 @@ from jinja2 import Environment
 from shared.graphiql import GraphIQL
 from resolvers import handle
 from shared.maana_amqp_pubsub import amqp_pubsub, configuration
-from settings import SERVICE_ID, SERVICE_PORT, RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ADDRESS
+from settings import SERVICE_ID, SERVICE_PORT,  RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ADDRESS
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
