@@ -10,36 +10,27 @@ from graphql_server import (
     json_encode,
     get_graphql_params
 )
-from graphql.execution.executors.asyncio import AsyncioExecutor
 
-# This file is a modified file from aiohttp-graphql.
-
-# The MIT License (MIT)
-#
-# Copyright (c) 2017 Devin Fee
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-# Copyright for portions of project aiohttp-graphql are held by Syrus Akbary, 2015
-# as part of project flask-graphql, and Sergey Privaev, as part of project
-# sanic-graphql. All other copyright for project aiohttp-graphql are held by Devin
-# Fee.
+#  This file incorporates work covered by the following copyright and  
+#  permission notice:  
+#   
+#      Copyright (c) 2017, Devin Fee (aiohttp-graphql)
+#      Copyright (c) 2015, Syrus Akbary (flask-graphql)
+#      Copyright (c) 2015, Sergey Privaev (sanic-graphql)
+#   
+#      Permission to use, copy, modify, and/or distribute this software  
+#      for any purpose with or without fee is hereby granted, provided  
+#      that the above copyright notice and this permission notice appear  
+#      in all copies.  
+#   
+#      THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL  
+#      WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED  
+#      WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE  
+#      AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR  
+#      CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS  
+#      OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,  
+#      NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN  
+#      CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.  
 
 
 class GraphIQL:
@@ -145,7 +136,8 @@ class GraphIQL:
             if request_method == 'options':
                 return self.process_preflight(request)
 
-            results, params = await run_query(self.schema, data, request.query)
+            out = await request.json()
+            results, params = await run_query(self.schema, data, request.query, out.get("operationName"))
 
             result, status_code = encode_execution_results(
                 results,
@@ -207,7 +199,7 @@ class GraphIQL:
         return web.Response(status=400)
 
 
-async def run_query(schema, data, query_data):
+async def run_query(schema, data, query_data, opName):
     data = [data]
 
     params = [get_graphql_params(a, query_data) for a in data]
@@ -216,7 +208,7 @@ async def run_query(schema, data, query_data):
     for param in params:
         result = await schema.execute(
                 param.query,
-                operation_name=param.operation_name,
+                operation_name=opName,
                 variable_values=param.variables,
                 return_promise=True
             )
