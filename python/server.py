@@ -21,13 +21,14 @@ async def handle_event(x):
     await handle(data_in)
     return None
 
-  
+
 async def init(loopy):
     app = web.Application(loop=loopy)
 
     async def graphql(request):
         back = await request.json()
         result = await schema.execute(back.get('query', ''), variable_values=back.get('variables', ''),
+                                      operation_name=back.get('operationName', ''),
                                       return_promise=True, allow_subscriptions=True)
         data = dict()
         if result.errors:
