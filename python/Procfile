@@ -1,1 +1,1 @@
-web: export KINDDB_KSVC_ENDPOINT_URL="http://cs12-0.dev.corp.maana.io:8008"; python server.py
+web: python server.py
