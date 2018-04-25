@@ -136,7 +136,10 @@ class GraphIQL:
             if request_method == 'options':
                 return self.process_preflight(request)
 
-            out = await request.json()
+            try:
+                out = await request.json()
+            except:
+                out = {}
             results, params = await run_query(self.schema, data, request.query, out.get("operationName"))
 
             result, status_code = encode_execution_results(

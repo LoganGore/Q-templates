@@ -5,8 +5,9 @@ import uuid
 import schema
 import logging
 from shared.kinddbsvc.KindDBSvc import KindDBSvc
+from settings import KINDDB_SERVICE_URL
 
-kindDB = KindDBSvc(tenantId=0, svcUrl=os.getenv('KINDDB_SERVICE_URL', 'http://localhost:8008/graphql'))
+kindDB = KindDBSvc(tenantId=0, svcUrl=KINDDB_SERVICE_URL)
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
