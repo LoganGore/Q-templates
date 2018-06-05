@@ -4,7 +4,8 @@ import string
 import logging
 import asyncio
 import aiohttp
-from settings import KINDDB_SERVICE_URL
+from settings import KINDDB_SERVICE_URL, REACT_APP_PORTAL_AUTH_DOMAIN, REACT_APP_PORTAL_AUTH_CLIENT_ID,\
+    REACT_APP_PORTAL_AUTH_CLIENT_SECRET, REACT_APP_PORTAL_AUTH_IDENTIFIER
 
 kindDetailsFragment = """
 id
@@ -33,7 +34,7 @@ schema {
 """
 
 InstanceDetailsFragment = """
-id
+    id
     kindId
     kind {
       schema {
@@ -67,11 +68,10 @@ id
       l_JSON
       l_KIND
     }
-  }
 """
 
 InstanceSetDetailsFragment = """
-kindId
+    kindId
     kind {
       schema {
         id
@@ -186,14 +186,16 @@ class KindDBSvc:
         return addInstanceInput
 
     def _check_response(self, json_resp):
+
         if 'errors' in json_resp.keys():
             raise RuntimeError(json_resp['errors'])
         else:
             pass
 
-    def __init__(self, tenantId, loop=asyncio.get_event_loop(), svcUrl=KINDDB_SERVICE_URL):
+    def __init__(self, tenantId, loop=asyncio.get_event_loop(), svcUrl = KINDDB_SERVICE_URL):
 
         self.loop = loop
+
         if tenantId is None or len(str(tenantId).strip()) == 0:
             raise ValueError("Missing argument: tenantId")
         else:
@@ -209,7 +211,6 @@ class KindDBSvc:
             self.session = aiohttp.ClientSession(loop=loop)
         except Exception as e:
             logger.error(e)
-            sys.exit(-1)
 
     async def getKind(self, kindId, kindName):
         query = string.Template(
@@ -264,14 +265,14 @@ class KindDBSvc:
                 instance(tenantId: $tenantId, instanceRef: $instanceRef) {
                   $instanceDetailsFragment
                 }
-              }
+            }
         """)
         variables = {
             "tenantId": self.tenantId,
-            "$instanceRef": {
+            "instanceRef": {
+                "id": instanceId,
                 "kindId": kindId,
-                "kindName": kindName,
-                "instanceId": instanceId
+                "kindName": kindName
             }
         }
         to_post = {
@@ -283,6 +284,10 @@ class KindDBSvc:
         logger.info("getInstance kn: {} kid: {}".format(kindName, kindId))
         self._check_response(out)
         return out["data"]
+
+    async def getInstanceByName(self, kindName, instanceId):
+        k_id = await self.getKindID(kindName=kindName)
+        return await self.getInstance(kindId=k_id, kindName=kindName, instanceId=instanceId)
 
     async def getLink(self, linkId):
         query = string.Template("""
@@ -303,6 +308,26 @@ class KindDBSvc:
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
         out = await resp.json()
         logger.info("getLink id: {}".format(linkId))
+        self._check_response(out)
+        return out["data"]
+
+    async def addLink(self, addLinkInput):
+        query = string.Template("""
+            mutation($tenantId: ID!, $addLinkInput: AddLinkInput!) {
+                addLink(tenantId: $tenantId, input: $addLinkInput)
+            }
+        """)
+        variables = {
+            "tenantId": self.tenantId,
+            "addLinkInput": addLinkInput
+        }
+        to_post = {
+            "query": query.template,
+            "variables": variables
+        }
+        resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
+        out = await resp.json()
+        logger.info("getLink id: {}".format(addLinkInput))
         self._check_response(out)
         return out["data"]
 
@@ -336,6 +361,26 @@ class KindDBSvc:
         self._check_response(out)
         return out["data"]
 
+    async def getAllInstancesByName(self, kindName=None, fieldIds=None, take=0):
+        try:
+            k_id = await self.getKindID(kindName=kindName)
+            return await self.getAllInstances(kindId=k_id, fieldIds=fieldIds, take=take)
+        except Exception as e:
+            logger.error(e)
+            logger.error("Unable to get kind {} ".format(kindName))
+            return None
+
+    async def getKindID(self, kindName):
+        res = await self.getAllInstances(kindName="Kind")
+        base = res.get("allInstances")
+        if base is not None:
+            records = base.get("records")
+            matches = [r for r in records if r[1].get("STRING") == kindName]
+            if len(matches) > 0:
+                return matches[0][0].get("ID")
+
+        return None
+
     async def addInstance(self, addInstanceInput):
         query = string.Template("""
             mutation($tenantId: ID!, $addInstanceInput: AddInstanceInput!) {
@@ -357,9 +402,10 @@ class KindDBSvc:
 
     async def addInstanceByKindName(self, kindName, instance):
         try:
-            kind = await self.getKind(kindId=None, kindName=kindName)
-            input = self._object_to_addInstanceInput(kind, instance)
-            return await self.addInstance(input)
+            k_id = await self.getKindID(kindName=kindName)
+            kind = await self.getKind(kindId=k_id, kindName=None)
+            imp = self._object_to_addInstanceInput(kind, instance)
+            return await self.addInstance(imp)
         except Exception as e:
             logger.error(e)
             logger.error("Unable to get kind {} ".format(kindName))
@@ -368,8 +414,8 @@ class KindDBSvc:
     async def addInstanceByKindId(self, kindId, instance):
         try:
             kind = await self.getKind(kindId=kindId, kindName=None)
-            input = self._object_to_addInstanceInput(kind, instance)
-            return await self.addInstance(input)
+            imp = self._object_to_addInstanceInput(kind['kind'], instance)
+            return await self.addInstance(imp)
         except Exception as e:
             logger.error(e)
             logger.error("Unable to get kind {} ".format(kindId))

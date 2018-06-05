@@ -23,7 +23,7 @@ def info():
 
 
 async def all_employees():
-    employee_res = await kindDB.getAllInstances(kindName="Employee")
+    employee_res = await kindDB.getAllInstancesByName(kindName="Employee")
     base = employee_res.get("allInstances")
     employees = []
     if base is not None:
