@@ -1,6 +1,4 @@
-# JavaScript Knowledge Service Template
-
-For the latest version, please visit the [Maana Knowledge Service Teamplate repository](https://github.com/maana-io/h4-ksvc-templates).
+# Node-based Maana Knowledge Microservice Template
 
 ## Layout
 
@@ -15,12 +13,12 @@ In `package.json`, edit the metadata:
 ```json
 {
   "name": "sample",
-  "author": "Maana, Inc.",
-  "license": "UNLICENSED",
-  "version": "2.0.0-alpha",
-  "description": "Sample Knowledge Service",
+  "author": "Acme, Inc.",
+  "license": "MIT",
+  "version": "1.0.0",
+  "description": "Awesome Bot",
   "main": "src/server.js",
-  "repository": "ssh://git@github.com:maana-io/h4-ksvc-templates.git",
+  "repository": "https://github.com/acme-inc/awesome-bot.git",
 ```
 
 * Edit the `.env` file to reflect proper `PORT`, `SERVICE_ID`, and other service-specific parameters.
