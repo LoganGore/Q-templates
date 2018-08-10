@@ -22,7 +22,8 @@ async def handle_event(x):
     return None
 
 
-async def init(loopy):
+def init(loopy):
+    asyncio.set_event_loop(loopy)
     app = web.Application(loop=loopy)
 
     async def graphql(request):
@@ -60,25 +61,32 @@ async def init(loopy):
     gql_view = GraphIQL.GraphIQL(schema=schema, jinja_env=j_env, graphiql=True)
     app.router.add_route('*', handler=gql_view, path="/graphiql", name='graphiql')
 
+    loopy.run_until_complete(
+        asyncio.gather(
+            asyncio.ensure_future(
+                loopy.create_server(app.make_handler(), SERVICE_ADDRESS, SERVICE_PORT)
+            ),
+            asyncio.ensure_future(
+                amqp_pubsub.AmqpPubSub(configuration.AmqpConnectionConfig(RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ID)).
+                    subscribe("fileAdded", lambda x: handle_event(x))
+            )
+        )
+    )
+
     try:
-        serv = await loopy.create_server(app.make_handler(), SERVICE_ADDRESS, SERVICE_PORT)
+        logging.info("Started server on {}:{}".format(SERVICE_ADDRESS, SERVICE_PORT))
+        loopy.run_forever()
     except Exception as e:
+        loopy.close()
         logger.error(e)
         sys.exit(-1)
-
-    logging.info("Started server on {}:{}".format(SERVICE_ADDRESS, SERVICE_PORT))
-    return serv
+    return None
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(
-    asyncio.gather(
-        asyncio.ensure_future(init(loop)),
-        asyncio.ensure_future(amqp_pubsub.AmqpPubSub(configuration.AmqpConnectionConfig(RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ID)).
-                              subscribe("linkAdded", lambda x: handle_event(x)))
-    )
-)
-try:
-    loop.run_forever()
-except KeyboardInterrupt:
-    sys.exit(0)
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    try:
+        init(loop)
+    except KeyboardInterrupt:
+        loop.close()
+        sys.exit(1)

@@ -4,8 +4,7 @@ import string
 import logging
 import asyncio
 import aiohttp
-from settings import KINDDB_SERVICE_URL, REACT_APP_PORTAL_AUTH_DOMAIN, REACT_APP_PORTAL_AUTH_CLIENT_ID,\
-    REACT_APP_PORTAL_AUTH_CLIENT_SECRET, REACT_APP_PORTAL_AUTH_IDENTIFIER
+from settings import KINDDB_SERVICE_URL, LOG_LEVEL
 
 kindDetailsFragment = """
 id
@@ -133,7 +132,7 @@ LinkDetailsFragment = """
 
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
 
 
 class KindDBSvc:
@@ -167,19 +166,40 @@ class KindDBSvc:
 
         return fieldValueObject
 
+    def _instanceSetFromObjects(self, schema, objects):
+        fieldIds = [f['id'] for f in schema if f['name'] != 'id']
 
+        instanceIds = []
+        records = []
 
-    def _object_to_addInstanceInput(self, rawKind, instance):
-        kind = rawKind["kind"]
+        for obj in objects:
+            record = []
+            for field in schema:
+                val = obj.get(field['name'], None)
+
+                if field['name'] == 'id':
+                    instanceIds.append(val)
+                else:
+                    record.append(self._create_fieldValueObject(field['type'], val, field['modifiers']))
+
+            records.append(record)
+
+        return fieldIds, instanceIds, records
+
+    def _object_to_addInstanceInput(self, kind, instance):
         addInstanceInput = {
-            "kindId": kind["id"],
+            "kindId": kind['id'],
             "id": instance["id"],
             "fieldIds": [],
             "fieldValues": []
         }
 
         for k, v in instance.items():
-            field = list(filter(lambda x: x["name"] == k, kind["schema"]))[0]
+            lis = list(filter(lambda x: x["name"] == k, kind["schema"]))
+            if len(lis) > 0:
+                field = lis[0]
+            else:
+                raise IOError("Field name specified in instance input not found in kind schema.")
             addInstanceInput["fieldIds"].append(field["id"])
             addInstanceInput["fieldValues"].append(self._create_fieldValueObject(field["type"], v, field["modifiers"]))
 
@@ -188,6 +208,7 @@ class KindDBSvc:
     def _check_response(self, json_resp):
 
         if 'errors' in json_resp.keys():
+            logger.error(json_resp['errors'])
             raise RuntimeError(json_resp['errors'])
         else:
             pass
@@ -211,6 +232,9 @@ class KindDBSvc:
             self.session = aiohttp.ClientSession(loop=loop)
         except Exception as e:
             logger.error(e)
+
+    async def close(self):
+        await self.session.close()
 
     async def getKind(self, kindId, kindName):
         query = string.Template(
@@ -238,6 +262,17 @@ class KindDBSvc:
             raise RuntimeError("No data received from kindDB")
         self._check_response(out)
         return out["data"]
+
+    async def getKindID(self, kindName):
+        res = await self.getAllInstances(kindName="Kind")
+        base = res.get("allInstances")
+        if base is not None:
+            records = base.get("records")
+            matches = [r for r in records if r[1].get("STRING") == kindName]
+            if len(matches) > 0:
+                return matches[0][0].get("ID")
+
+        return None
 
     async def allKinds(self):
         query = string.Template("""
@@ -281,7 +316,33 @@ class KindDBSvc:
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
         out = await resp.json()
-        logger.info("getInstance kn: {} kid: {}".format(kindName, kindId))
+
+        logger.info("getInstance kid: {}".format(kindId))
+        self._check_response(out)
+        return out["data"]
+
+    async def getInstanceByName(self, kindName, instanceId):
+        k_id = await self.getKindID(kindName=kindName)
+        return await self.getInstance(kindId=k_id, instanceId=instanceId, kindName=kindName)
+
+    async def addRelation(self, addRelationInput):
+        query = string.Template(
+            """mutation($tenantId: ID!, $addRelationInput: AddRelationInput!) {
+                addRelation(tenantId: $tenantId, input: $addRelationInput)
+            }
+        """
+        )
+        variables = {
+            "tenantId": self.tenantId,
+            "addRelationInput": addRelationInput
+        }
+        to_post = {
+            "query": query.safe_substitute(kindFragment=kindDetailsFragment),
+            "variables": variables
+        }
+        logger.info("Add relation: {} ".format(addRelationInput))
+        resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
+        out = await resp.json()
         self._check_response(out)
         return out["data"]
 
@@ -327,11 +388,31 @@ class KindDBSvc:
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
         out = await resp.json()
-        logger.info("getLink id: {}".format(addLinkInput))
+        logger.info("addLink: {}".format(addLinkInput))
         self._check_response(out)
         return out["data"]
 
-    async def getAllInstances(self, kindId=None, kindName=None, fieldIds=None, take=0):
+    async def addLinks(self, addLinkInputs):
+        query = string.Template("""
+            mutation($tenantId: ID!, $addLinkInputs: [AddLinkInput]!) {
+                addLinks(tenantId: $tenantId, input: $addLinkInputs)
+            }
+        """)
+        variables = {
+            "tenantId": self.tenantId,
+            "addLinkInputs": addLinkInputs
+        }
+        to_post = {
+            "query": query.template,
+            "variables": variables
+        }
+        resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
+        out = await resp.json()
+        logger.info("addLinks: {}".format(addLinkInputs))
+        self._check_response(out)
+        return out["data"]
+
+    async def getAllInstances(self, kindId=None, kindName=None, fieldIds=None, take=0, recursion=False):
         query = string.Template("""
               query($tenantId: ID!, $kindId: ID, $kindName: String, $take: Int) {
                 allInstances(
@@ -357,6 +438,49 @@ class KindDBSvc:
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
         out = await resp.json()
+
+        if out["data"]["allInstances"] is None:
+            return None
+
+        if recursion:
+            schema = out['data']['allInstances']['kind']['schema']
+            schema_map = dict(enumerate(schema))
+            ks = {i: f for (i, f) in schema_map.items() if f['type'] == 'KIND'}
+            if len(ks) > 0:
+                insts = out['data']['allInstances']['records']
+                logger.debug("Beginning Nesting")
+                nested_data = {i: await self.getAllInstances(kindId=f['typeKindId'], recursion=True)
+                               for (i, f) in ks.items()}
+                new = []
+                for r in insts:
+                    for i, d in nested_data.items():
+                        if d is not None:
+                            to_replace = r[i]
+                            if len(ks[i]['modifiers']) > 0:
+                                new_to_replace = []
+                                for a in to_replace['l_KIND']:
+                                    new_to_replace.append(
+                                        [rs for rs in d['allInstances']['records'] if rs[0]['ID'] == a][0]
+                                    )
+                                r[i]['l_KIND'] = new_to_replace
+                                new.append(r)
+                            elif to_replace['KIND'] is not None:
+                                try:
+                                    r[i]['KIND'] = \
+                                        [r for r in d['allInstances']['records'] if r[0]['ID'] == to_replace['KIND']][0]
+                                except Exception:
+                                    logger.error(
+                                        "Invalid kind id in KIND field for: {} kid: {}".format(kindName, kindId))
+                                    logger.error(str(ks[i]))
+                                    pass
+                            else:
+                                r[i]['KIND'] = None
+                        else:
+                            r[i]['KIND'] = None
+
+                        new.append(r)
+                out['data']['allInstances']['records'] = new
+
         logger.info("getAllInstances kn: {} kid: {}".format(kindName, kindId))
         self._check_response(out)
         return out["data"]
@@ -369,17 +493,6 @@ class KindDBSvc:
             logger.error(e)
             logger.error("Unable to get kind {} ".format(kindName))
             return None
-
-    async def getKindID(self, kindName):
-        res = await self.getAllInstances(kindName="Kind")
-        base = res.get("allInstances")
-        if base is not None:
-            records = base.get("records")
-            matches = [r for r in records if r[1].get("STRING") == kindName]
-            if len(matches) > 0:
-                return matches[0][0].get("ID")
-
-        return None
 
     async def addInstance(self, addInstanceInput):
         query = string.Template("""
@@ -402,9 +515,8 @@ class KindDBSvc:
 
     async def addInstanceByKindName(self, kindName, instance):
         try:
-            k_id = await self.getKindID(kindName=kindName)
-            kind = await self.getKind(kindId=k_id, kindName=None)
-            imp = self._object_to_addInstanceInput(kind, instance)
+            kind = await self.getKind(kindId=None, kindName=kindName)
+            imp = self._object_to_addInstanceInput(kind['kind'], instance)
             return await self.addInstance(imp)
         except Exception as e:
             logger.error(e)
@@ -416,6 +528,54 @@ class KindDBSvc:
             kind = await self.getKind(kindId=kindId, kindName=None)
             imp = self._object_to_addInstanceInput(kind['kind'], instance)
             return await self.addInstance(imp)
+        except Exception as e:
+            logger.error(e)
+            logger.error("Unable to get kind {} ".format(kindId))
+            return None
+
+    async def addInstanceSet(self, addInstanceSetInput):
+        query = string.Template("""
+          mutation($tenantId: ID!, $addInstanceSetInput: AddInstanceSetInput!) {
+            addInstanceSet(tenantId: $tenantId, input: $addInstanceSetInput)
+        }
+        """)
+        variables = {
+            "tenantId": self.tenantId,
+            "addInstanceSetInput": addInstanceSetInput
+        }
+        to_post = {
+            "query": query.template,
+            "variables": variables
+        }
+        resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
+        out = await resp.json()
+        self._check_response(out)
+        return out["data"]
+
+    async def addInstancesByKind(self, kind, instances):
+        fieldIds, instanceIds, records = self._instanceSetFromObjects(kind['schema'], instances)
+        addInstanceSetInput = {
+            "kindId": kind['id'],
+            "ids": instanceIds,
+            "fieldIds": fieldIds,
+            "records": records
+        }
+
+        return await self.addInstanceSet(addInstanceSetInput)
+
+    async def addInstancesByKindName(self, kindName, instances):
+        try:
+            kind = await self.getKind(kindId=None, kindName=kindName)
+            return await self.addInstancesByKind(kind['kind'], instances)
+        except Exception as e:
+            logger.error(e)
+            logger.error("Unable to get kind {} ".format(kindName))
+            return None
+
+    async def addInstancesByKindId(self, kindId, instances):
+        try:
+            kind = await self.getKind(kindId=kindId, kindName=None)
+            return await self.addInstancesByKind(kind['kind'], instances)
         except Exception as e:
             logger.error(e)
             logger.error("Unable to get kind {} ".format(kindId))

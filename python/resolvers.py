@@ -52,17 +52,14 @@ async def add_employee(employee):
 async def handle(event):
 
     parsed_event = json.loads(event)
-
-    if "linkAdded" in parsed_event.keys():
-        return await handle_file(parsed_event)
+    
+    if "fileAdded" in parsed_event.keys():
+        if parsed_event['fileAdded']['mimeType'] == 'text/plain':
+            return await handle_file(parsed_event)
 
 
 async def handle_file(blob):
 
-    link_added = blob["linkAdded"]
-    link_id = link_added["id"]
-
-    link = await kindDB.getLink(link_id)
-    logger.debug("Got link! " + json.dumps(link))
+    print("Got it! " + blob['fileAdded']['url'])
 
     return None
