@@ -1,0 +1,15 @@
+{
+  "valueType": "nodes",
+  "values": [
+    {
+      "_typeName": "Edge",
+      "id": "test-e00",
+      "type": "SpecialEdge"
+    },
+    {
+      "_typeName": "Edge",
+      "id": "test-e01",
+      "type": "EmptyEdge"
+    }
+  ]
+}

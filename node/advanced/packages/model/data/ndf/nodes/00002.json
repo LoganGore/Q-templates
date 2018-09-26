@@ -1,0 +1,10 @@
+{
+  "valueType": "nodes",
+  "values": [
+    {
+      "_typeName": "Graph",
+      "id": "test-g00",
+      "name": "Test Graph #00"
+    }
+  ]
+}
