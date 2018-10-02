@@ -3,56 +3,68 @@
 //
 
 // load .env into process.env.*
-require('dotenv').config()
+require("dotenv").config()
+
 // File system access
-import fs from 'nano-fs'
+import fs from "nano-fs"
+
 // HTTP client
-import fetch from 'node-fetch'
+import fetch from "node-fetch"
+
 // HTTP server
-import { createServer } from 'http'
+import { createServer } from "http"
+
 // routing engine
-import express from 'express'
+import * as express from "express"
+
 // middleware to assemble content from HTTP
-import bodyParser from 'body-parser'
+import * as bodyParser from "body-parser"
+
 // middleware to allow cross-origin requests
-import cors from 'cors'
+import * as cors from "cors"
+
 // middleware to support GraphQL
-import { graphqlExpress, graphiqlExpress } from 'apollo-server-express'
+import { graphiqlExpress, graphqlExpress } from "apollo-server-express"
+
 // GraphQL core operations
-import { execute, subscribe } from 'graphql'
+import { execute, subscribe } from "graphql"
+
 // GraphQL schema compilation
-import { makeExecutableSchema } from 'graphql-tools'
+import { makeExecutableSchema } from "graphql-tools"
+
 // GraphQL websocket pubsub transport
-import { SubscriptionServer } from 'subscriptions-transport-ws'
+import { SubscriptionServer } from "subscriptions-transport-ws"
+
 // GraphQL client
-import { ApolloClient } from 'apollo-client'
+import { ApolloClient } from "apollo-client"
+
 // GraphQL networking: HTTP
-import { createHttpLink } from 'apollo-link-http'
+import { createHttpLink } from "apollo-link-http"
+
 // GraphQL query caching
-import { InMemoryCache } from 'apollo-cache-inmemory'
+import { InMemoryCache } from "apollo-cache-inmemory"
+
 // GraphQL link context for authorization
-import { setContext } from 'apollo-link-context'
+import { setContext } from "apollo-link-context"
+
 // Auth0 Authentication client
-import { AuthenticationClient } from 'auth0'
-// Keep GraphQL stuff nicely factored
-import glue from 'schemaglue'
+import { AuthenticationClient } from "auth0"
 
 //
 // Internal imports
 //
-import { log, print, initMetrics, counter } from 'io.maana.shared'
+import { counter, initMetrics, log, print } from "io.maana.shared"
 
-const {} = glue('src/graphql')
-const options = {
-  js: '**/*.js' // default
-  // ignore: '**/somefileyoudonotwant.js'
-}
-const glueRes = glue('src/graphql', options)
-console.log('gl', glueRes)
+// GraphQL resolvers (implementation)
+import resolvers from "./resolvers"
+
+// GraphQL schema (model)
+const typeDefs = fs.readFileSync("src/schema.gql", { encoding: "utf-8" })
+
 // Compile schema
 export const schema = makeExecutableSchema({
-  typeDefs: glueRes.schema,
-  resolvers: glueRes.resolver
+  typeDefs,
+  resolvers,
 })
 
 //
@@ -61,20 +73,20 @@ export const schema = makeExecutableSchema({
 //
 let client
 
-const clientSetup = token => {
+const clientSetup = (token) => {
   const authLink = setContext((_, { headers }) => {
     // return the headers to the context so httpLink can read them
     return {
       headers: {
         ...headers,
-        authorization: token ? `Bearer ${token}` : ''
-      }
+        authorization: token ? `Bearer ${token}` : "",
+      },
     }
   })
 
   const httpLink = createHttpLink({
     uri: REMOTE_KSVC_ENDPOINT_URL,
-    fetch
+    fetch,
   })
 
   // Now that subsriptions are managed through RabbitMQ, WebSocket transport is no longer needed
@@ -83,7 +95,7 @@ const clientSetup = token => {
 
   client = new ApolloClient({
     link,
-    cache: new InMemoryCache()
+    cache: new InMemoryCache(),
   })
 }
 
@@ -91,16 +103,16 @@ const clientSetup = token => {
 // Server setup
 //
 // Our service identity
-const SELF = process.env.SERVICE_ID || 'io.maana.template'
+const SELF = process.env.SERVICE_ID || "io.maana.template"
 
 // HTTP port
 const PORT = process.env.PORT
 
 // HOSTNAME for subscriptions etc.
-const HOSTNAME = process.env.HOSTNAME || 'localhost'
+const HOSTNAME = process.env.HOSTNAME || "localhost"
 
 // External DNS name for service
-const PUBLICNAME = process.env.PUBLICNAME || 'localhost'
+const PUBLICNAME = process.env.PUBLICNAME || "localhost"
 
 // Remote (peer) services we use
 const REMOTE_KSVC_ENDPOINT_URL = process.env.REMOTE_KSVC_ENDPOINT_URL
@@ -116,86 +128,86 @@ const app = express()
 //
 const corsOptions = {
   origin: `http://${PUBLICNAME}:3000`,
-  credentials: true // <-- REQUIRED backend setting
+  credentials: true, // <-- REQUIRED backend setting
 }
 
 app.use(cors(corsOptions)) // enable all CORS requests
-app.options('*', cors()) // enable pre-flight for all routes
+app.options("*", cors()) // enable pre-flight for all routes
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   res.send(`${SELF}\n`)
 })
 
 const defaultHttpMiddleware = [
   graphqlExpress({
-    schema
-  })
+    schema,
+  }),
 ]
 
 const defaultSocketMiddleware = (connectionParams, webSocket) => {
   return new Promise(function(resolve, reject) {
     log(SELF).warn(
-      'Socket Authentication is disabled. This should not run in production.'
+      "Socket Authentication is disabled. This should not run in production.",
     )
     resolve()
   })
 }
 
 initMetrics(SELF)
-const graphqlRequestCounter = counter('graphqlRequests', 'it counts')
+const graphqlRequestCounter = counter("graphqlRequests", "it counts")
 
-const initServer = options => {
-  let { httpAuthMiddleware, socketAuthMiddleware } = options
-  let httpMiddleware = httpAuthMiddleware
+const initServer = (options) => {
+  const { httpAuthMiddleware, socketAuthMiddleware } = options
+  const httpMiddleware = httpAuthMiddleware
     ? [httpAuthMiddleware, ...defaultHttpMiddleware]
     : defaultHttpMiddleware
-  let socketMiddleware = socketAuthMiddleware
+  const socketMiddleware = socketAuthMiddleware
     ? socketAuthMiddleware
     : defaultSocketMiddleware
 
   app.use(
-    '/graphql',
+    "/graphql",
     (req, res, next) => {
       graphqlRequestCounter.inc()
       next()
     },
     bodyParser.json(),
-    httpMiddleware
+    httpMiddleware,
   )
 
   app.use(
-    '/graphiql',
+    "/graphiql",
     graphiqlExpress({
-      endpointURL: '/graphql',
-      subscriptionsEndpoint: `ws://${HOSTNAME}:${PORT}/subscriptions`
-    })
+      endpointURL: "/graphql",
+      subscriptionsEndpoint: `ws://${HOSTNAME}:${PORT}/subscriptions`,
+    }),
   )
 
   const server = createServer(app)
 
   server.listen(PORT, () => {
     log(SELF).info(
-      `listening on ${print.external(`http://${HOSTNAME}:${PORT}`)}`
+      `listening on ${print.external(`http://${HOSTNAME}:${PORT}`)}`,
     )
 
-    let auth0 = new AuthenticationClient({
+    const auth0 = new AuthenticationClient({
       domain: process.env.REACT_APP_PORTAL_AUTH_DOMAIN,
       clientId: process.env.REACT_APP_PORTAL_AUTH_CLIENT_ID,
-      clientSecret: process.env.REACT_APP_PORTAL_AUTH_CLIENT_SECRET
+      clientSecret: process.env.REACT_APP_PORTAL_AUTH_CLIENT_SECRET,
     })
 
     auth0.clientCredentialsGrant(
       {
         audience: process.env.REACT_APP_PORTAL_AUTH_IDENTIFIER,
-        scope: 'read:client_grants'
+        scope: "read:client_grants",
       },
       function(err, response) {
         if (err) {
-          console.error('Client was unable to connect', err)
+          console.error("Client was unable to connect", err)
         }
 
         clientSetup(response.access_token)
-      }
+      },
     )
   })
 
@@ -205,12 +217,12 @@ const initServer = options => {
       subscribe,
       schema,
       onConnect: socketMiddleware,
-      keepAlive: 3000
+      keepAlive: 3000,
     },
     {
-      server: server,
-      path: '/subscriptions'
-    }
+      server,
+      path: "/subscriptions",
+    },
   )
 }
 

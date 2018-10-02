@@ -1,0 +1,56 @@
+scalar Date
+
+scalar JSON
+
+type Info {
+  id: ID!
+  name: String!
+  description: String
+}
+
+type Person {
+  # Kind fields
+  id: ID! # internal identifier (unique)
+  name: String # external identifier (non-unique)
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+# Create a Person instance
+input PersonInput {
+  id: ID # if known, otherwise one will be generated
+  name: String
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+# Standard queries (instance and batch)
+type Query {
+  info: Info
+  allPeople: [Person!]!
+  person(id: ID!): Person
+}
+
+# Standard mutations (instance and batch)
+type Mutation {
+  addPerson(input: PersonInput): ID
+  updatePerson(input: PersonInput): ID
+  deletePerson(id: ID!): Person
+}
+
+# Standard events
+type PersonEvent {
+  id: ID
+  name: String
+  givenName: String
+  familyName: String
+  dateOfBirth: Date
+}
+
+type Subscription {
+  personAdded: PersonEvent!
+  personUpdated: PersonEvent!
+  personDeleted: PersonEvent!
+}
