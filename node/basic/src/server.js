@@ -4,8 +4,7 @@
 
 // load .env into process.env.*
 require('dotenv').config()
-// File system access
-import fs from 'nano-fs'
+
 // HTTP client
 import fetch from 'node-fetch'
 // HTTP server
@@ -19,7 +18,7 @@ import cors from 'cors'
 // middleware to support GraphQL
 import { graphqlExpress, graphiqlExpress } from 'apollo-server-express'
 // GraphQL core operations
-import { execute, subscribe } from 'graphql'
+import { execute } from 'graphql'
 // GraphQL schema compilation
 import { makeExecutableSchema } from 'graphql-tools'
 // GraphQL websocket pubsub transport
@@ -42,13 +41,12 @@ import glue from 'schemaglue'
 //
 import { log, print, initMetrics, counter } from 'io.maana.shared'
 
-const {} = glue('src/graphql')
 const options = {
   js: '**/*.js' // default
   // ignore: '**/somefileyoudonotwant.js'
 }
 const glueRes = glue('src/graphql', options)
-console.log('gl', glueRes)
+
 // Compile schema
 export const schema = makeExecutableSchema({
   typeDefs: glueRes.schema,
