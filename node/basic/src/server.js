@@ -16,7 +16,7 @@ import bodyParser from 'body-parser'
 // middleware to allow cross-origin requests
 import cors from 'cors'
 // middleware to support GraphQL
-import { graphqlExpress, graphiqlExpress } from 'apollo-server-express'
+import { ApolloServer } from 'apollo-server-express'
 // GraphQL core operations
 import { execute } from 'graphql'
 // GraphQL schema compilation
@@ -35,6 +35,8 @@ import { setContext } from 'apollo-link-context'
 import { AuthenticationClient } from 'auth0'
 // Keep GraphQL stuff nicely factored
 import glue from 'schemaglue'
+
+import http from 'http'
 
 //
 // Internal imports
@@ -124,12 +126,6 @@ app.get('/', (req, res) => {
   res.send(`${SELF}\n`)
 })
 
-const defaultHttpMiddleware = [
-  graphqlExpress({
-    schema
-  })
-]
-
 const defaultSocketMiddleware = (connectionParams, webSocket) => {
   return new Promise(function(resolve, reject) {
     log(SELF).warn(
@@ -144,34 +140,26 @@ const graphqlRequestCounter = counter('graphqlRequests', 'it counts')
 
 const initServer = options => {
   let { httpAuthMiddleware, socketAuthMiddleware } = options
-  let httpMiddleware = httpAuthMiddleware
-    ? [httpAuthMiddleware, ...defaultHttpMiddleware]
-    : defaultHttpMiddleware
+
   let socketMiddleware = socketAuthMiddleware
     ? socketAuthMiddleware
     : defaultSocketMiddleware
 
-  app.use(
-    '/graphql',
-    (req, res, next) => {
-      graphqlRequestCounter.inc()
-      next()
-    },
-    bodyParser.json(),
-    httpMiddleware
-  )
+  const server = new ApolloServer({
+    schema,
+    subscriptions: {
+      onConnect: socketMiddleware
+    }
+  })
 
-  app.use(
-    '/graphiql',
-    graphiqlExpress({
-      endpointURL: '/graphql',
-      subscriptionsEndpoint: `ws://${HOSTNAME}:${PORT}/subscriptions`
-    })
-  )
+  server.applyMiddleware({
+    app
+  })
 
-  const server = createServer(app)
+  const httpServer = http.createServer(app)
+  server.installSubscriptionHandlers(httpServer)
 
-  server.listen(PORT, () => {
+  httpServer.listen({ port: PORT }, () => {
     log(SELF).info(
       `listening on ${print.external(`http://${HOSTNAME}:${PORT}`)}`
     )
@@ -196,20 +184,6 @@ const initServer = options => {
       }
     )
   })
-
-  const subscriptionServer = new SubscriptionServer(
-    {
-      execute,
-      subscribe,
-      schema,
-      onConnect: socketMiddleware,
-      keepAlive: 3000
-    },
-    {
-      server: server,
-      path: '/subscriptions'
-    }
-  )
 }
 
 export default initServer
