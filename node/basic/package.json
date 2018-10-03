@@ -35,7 +35,7 @@
     "apollo-fetch": "^0.7.0",
     "apollo-link-context": "^1.0.9",
     "apollo-link-http": "^1.5.5",
-    "apollo-server-express": "^1.4.0",
+    "apollo-server-express": "^2.1.0",
     "auth0": "^2.13.0",
     "body-parser": "^1.18.3",
     "chalk": "^2.4.1",

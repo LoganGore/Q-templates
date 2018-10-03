@@ -28,6 +28,7 @@ export const resolver = {
         input.id = uuid.v4()
       }
       people[input.id] = input
+      pubsub.publish('personAdded', { personAdded: input })
       return input.id
     }
   },
