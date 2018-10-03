@@ -35,7 +35,7 @@ import { setContext } from 'apollo-link-context'
 import { AuthenticationClient } from 'auth0'
 // Keep GraphQL stuff nicely factored
 import glue from 'schemaglue'
-
+import path from 'path'
 import http from 'http'
 
 //
@@ -44,10 +44,15 @@ import http from 'http'
 import { log, print, initMetrics, counter } from 'io.maana.shared'
 
 const options = {
-  js: '**/*.js' // default
+  mode: 'js' // default
   // ignore: '**/somefileyoudonotwant.js'
 }
-const glueRes = glue('src/graphql', options)
+const schemaPath = path.join(
+  '.',
+  `${__dirname}`.replace(process.cwd(), ''),
+  'graphql/'
+)
+const glueRes = glue(schemaPath, options)
 
 // Compile schema
 export const schema = makeExecutableSchema({

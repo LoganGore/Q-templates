@@ -8,7 +8,7 @@
   "main": "src/start.js",
   "repository": "git@github.com:maana-io/Q-ksvc-templates.git [<- CHANGE]",
   "scripts": {
-    "build": "./node_modules/.bin/babel ./src -d ./dist",
+    "build": "./node_modules/.bin/babel ./src -d ./dist --copy-files",
     "docker-build": "docker build -t maana-template-logic .",
     "docker-run": "docker run -p 8050:8050 maana-template-logic",
     "precommit": "lint-staged",
