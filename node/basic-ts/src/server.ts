@@ -8,9 +8,6 @@ require("dotenv").config()
 // File system access
 import fs from "nano-fs"
 
-// HTTP client
-import fetch from "node-fetch"
-
 // HTTP server
 import { createServer } from "http"
 
@@ -35,25 +32,13 @@ import { makeExecutableSchema } from "graphql-tools"
 // GraphQL websocket pubsub transport
 import { SubscriptionServer } from "subscriptions-transport-ws"
 
-// GraphQL client
-import { ApolloClient } from "apollo-client"
-
-// GraphQL networking: HTTP
-import { createHttpLink } from "apollo-link-http"
-
-// GraphQL query caching
-import { InMemoryCache } from "apollo-cache-inmemory"
-
-// GraphQL link context for authorization
-import { setContext } from "apollo-link-context"
-
 // Auth0 Authentication client
 import { AuthenticationClient } from "auth0"
 
 //
 // Internal imports
 //
-import { counter, initMetrics, log, print } from "io.maana.shared"
+import { counter, initMetrics, log, print, BuildGraphqlClient } from "io.maana.shared"
 
 // GraphQL resolvers (implementation)
 import resolvers from "./resolvers"
@@ -72,32 +57,21 @@ export const schema = makeExecutableSchema({
 // - allow this service to be a client of a remote service
 //
 let client
-
 const clientSetup = (token) => {
-  const authLink = setContext((_, { headers }) => {
-    // return the headers to the context so httpLink can read them
-    return {
-      headers: {
-        ...headers,
-        authorization: token ? `Bearer ${token}` : "",
-      },
-    }
-  })
-
-  const httpLink = createHttpLink({
-    uri: REMOTE_KSVC_ENDPOINT_URL,
-    fetch,
-  })
-
-  // Now that subsriptions are managed through RabbitMQ, WebSocket transport is no longer needed
-  // as it is not production-ready and causes both lost and duplicate events.
-  const link = authLink.concat(httpLink)
-
-  client = new ApolloClient({
-    link,
-    cache: new InMemoryCache(),
-  })
+  if (!client) {
+    // construct graphql client using endpoint and context
+    client = BuildGraphqlClient(REMOTE_KSVC_ENDPOINT_URL, (_, { headers }) => {
+      // return the headers to the context so httpLink can read them
+      return {
+        headers: {
+          ...headers,
+          authorization: token ? `Bearer ${token}` : ''
+        }
+      }
+    })
+  }
 }
+
 
 //
 // Server setup
