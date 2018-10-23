@@ -23,8 +23,6 @@ import { execute } from 'graphql'
 import { makeExecutableSchema } from 'graphql-tools'
 // GraphQL websocket pubsub transport
 import { SubscriptionServer } from 'subscriptions-transport-ws'
-// GraphQL client
-import { ApolloClient } from 'apollo-client'
 // GraphQL networking: HTTP
 import { createHttpLink } from 'apollo-link-http'
 // GraphQL query caching
@@ -41,7 +39,7 @@ import http from 'http'
 //
 // Internal imports
 //
-import { log, print, initMetrics, counter } from 'io.maana.shared'
+import { log, print, initMetrics, counter, BuildGraphqlClient } from 'io.maana.shared'
 
 const options = {
   mode: 'js' // default
@@ -65,31 +63,19 @@ export const schema = makeExecutableSchema({
 // - allow this service to be a client of a remote service
 //
 let client
-
 const clientSetup = token => {
-  const authLink = setContext((_, { headers }) => {
-    // return the headers to the context so httpLink can read them
-    return {
-      headers: {
-        ...headers,
-        authorization: token ? `Bearer ${token}` : ''
+  if (!client) {
+    //Consruct graphql client with using endpoin and context.
+    client = BuildGraphqlClient(REMOTE_KSVC_ENDPOINT_URL, (_, { headers }) => {
+      // return the headers to the context so httpLink can read them
+      return {
+        headers: {
+          ...headers,
+          authorization: token ? `Bearer ${token}` : ''
+        }
       }
-    }
-  })
-
-  const httpLink = createHttpLink({
-    uri: REMOTE_KSVC_ENDPOINT_URL,
-    fetch
-  })
-
-  // Now that subsriptions are managed through RabbitMQ, WebSocket transport is no longer needed
-  // as it is not production-ready and causes both lost and duplicate events.
-  const link = authLink.concat(httpLink)
-
-  client = new ApolloClient({
-    link,
-    cache: new InMemoryCache()
-  })
+    })
+  }
 }
 
 //
