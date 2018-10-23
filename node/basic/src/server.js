@@ -4,31 +4,14 @@
 
 // load .env into process.env.*
 require('dotenv').config()
-
-// HTTP client
-import fetch from 'node-fetch'
-// HTTP server
-import { createServer } from 'http'
 // routing engine
 import express from 'express'
-// middleware to assemble content from HTTP
-import bodyParser from 'body-parser'
 // middleware to allow cross-origin requests
 import cors from 'cors'
 // middleware to support GraphQL
 import { ApolloServer } from 'apollo-server-express'
-// GraphQL core operations
-import { execute } from 'graphql'
 // GraphQL schema compilation
 import { makeExecutableSchema } from 'graphql-tools'
-// GraphQL websocket pubsub transport
-import { SubscriptionServer } from 'subscriptions-transport-ws'
-// GraphQL networking: HTTP
-import { createHttpLink } from 'apollo-link-http'
-// GraphQL query caching
-import { InMemoryCache } from 'apollo-cache-inmemory'
-// GraphQL link context for authorization
-import { setContext } from 'apollo-link-context'
 // Auth0 Authentication client
 import { AuthenticationClient } from 'auth0'
 // Keep GraphQL stuff nicely factored
@@ -65,7 +48,7 @@ export const schema = makeExecutableSchema({
 let client
 const clientSetup = token => {
   if (!client) {
-    //Consruct graphql client with using endpoin and context.
+    // construct graphql client using endpoint and context
     client = BuildGraphqlClient(REMOTE_KSVC_ENDPOINT_URL, (_, { headers }) => {
       // return the headers to the context so httpLink can read them
       return {
@@ -95,10 +78,6 @@ const PUBLICNAME = process.env.PUBLICNAME || 'localhost'
 
 // Remote (peer) services we use
 const REMOTE_KSVC_ENDPOINT_URL = process.env.REMOTE_KSVC_ENDPOINT_URL
-
-// Remote (peer) subscription endpoint we use
-const REMOTE_KSVC_SUBSCRIPTION_ENDPOINT_URL =
-  process.env.REMOTE_KSVC_SUBSCRIPTION_ENDPOINT_URL
 
 const app = express()
 
