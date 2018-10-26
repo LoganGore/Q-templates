@@ -22,7 +22,13 @@ import http from 'http'
 //
 // Internal imports
 //
-import { log, print, initMetrics, counter, BuildGraphqlClient } from 'io.maana.shared'
+import {
+  log,
+  print,
+  initMetrics,
+  counter,
+  BuildGraphqlClient
+} from 'io.maana.shared'
 
 const options = {
   mode: 'js' // default
