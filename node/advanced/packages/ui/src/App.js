@@ -37,7 +37,7 @@ const GET_GRAPH = gql`
 class App extends Component {
   render() {
     return (
-      <Query query={GET_GRAPH} variables={{ id: "wuzc3iVSY3ndS6JarBPpCA" }}>
+      <Query query={GET_GRAPH} variables={{ id: "test-g00" }}>
         {({ loading, error, data }) => {
           if (error) {
             return <div>Error :(</div>;
