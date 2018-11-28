@@ -32,15 +32,21 @@ class CKGClient:
 
             self.token = token['access_token']
             self.expires = token['expires_in']
-            expiration_time = datetime.datetime.fromtimestamp(int(token['expires_in'])).strftime('%H:%M:%S')
-            self.renewal_time_hours = .5 * int(datetime.datetime.fromtimestamp(int(token['expires_in'])).strftime('%H'))
+            expiration_time = '{}d {}h:{}m:{}s'.format(self.expires // 86400,
+                                                       (self.expires %
+                                                        86400) // 3600,
+                                                       (self.expires %
+                                                        3600) // 60,
+                                                       self.expires % 60)
+            self.renewal_time_hours = .5 * (self.expires // 3600)
             logger.info("Token expires in {}".format(expiration_time))
             self.headers = {
                 "Content-Type": "application/json",
                 "authorization": "Bearer " + self.token
             }
             self.session = aiohttp.ClientSession(loop=loop)
-            asyncio.ensure_future(self.renewal(self.renewal_time_hours * 60 * 60))
+            asyncio.ensure_future(self.renewal(
+                self.renewal_time_hours * 60 * 60))
         except Exception as e:
             logger.error("Unable to connect to Maana {}".format(service_url))
             pass
@@ -56,7 +62,7 @@ class CKGClient:
             temp = self.headers
             temp['authorization'] = "Bearer " + self.token
             self.headers = temp
-            self.renewal_time_hours = .5 * int(datetime.datetime.fromtimestamp(int(token['expires_in'])).strftime('%H'))
+            self.renewal_time_hours = .5 * (self.expires // 3600)
             await asyncio.sleep(self.renewal_time_hours * 60 * 60)
 
     def query(self, query, variables=None):
@@ -68,7 +74,8 @@ class CKGClient:
         if out.status_code == 200:
             return out.json()
         else:
-            logger.error("Query failed! Code: {}\nText: {}".format(out.status_code, out.text))
+            logger.error("Query failed! Code: {}\nText: {}".format(
+                out.status_code, out.text))
             return None
 
     async def async_query(self, query, variables=None):
@@ -79,8 +86,8 @@ class CKGClient:
         }
         resp = await self.session.post(self.service_url, data=json.dumps(final), headers=self.headers)
 
-        if resp.status_code == 200:
+        if resp.status == 200:
             return await resp.json()
         else:
-            logger.error("Query failed! Code: {}".format(resp.status_code))
+            logger.error("Query failed! Code: {}".format(resp.status))
             return None
