@@ -5,26 +5,19 @@ import json
 import logging
 import asyncio
 import sys
-from jinja2 import Environment
-from shared.graphiql import GraphIQL
-from resolvers import handle
-from shared.maana_amqp_pubsub import amqp_pubsub, configuration
-from settings import SERVICE_ID, SERVICE_PORT, RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ADDRESS
+import os
+from settings import LOG_LEVEL, SERVICE_PORT, SERVICE_ADDRESS, PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
 
-
-async def handle_event(x):
-    data_in = x.decode('utf8')
-    logger.info("Got event: " + data_in)
-    await handle(data_in)
-    return None
-
+# Copy and paste to drop into debugger.
+# import code
+# code.interact(local=dict(globals(), **locals()))
 
 def init(loopy):
     asyncio.set_event_loop(loopy)
-    app = web.Application(loop=loopy)
+    app = web.Application()
 
     async def graphql(request):
         back = await request.json()
@@ -40,9 +33,8 @@ def init(loopy):
             data['invalid'] = result.invalid
         return web.Response(text=json.dumps(data), headers={'Content-Type': 'application/json'})
 
-    # For /graphql
-    app.router.add_post('/graphql', graphql, name='graphql')
-    app.router.add_get('/graphql', graphql, name='graphql')
+    async def graphiql(request):
+        return web.FileResponse(os.path.join(PROJECT_ROOT, "shared") + "/graphiql/graphiql.html")
 
     # Configure default CORS settings.
     cors = aiohttp_cors.setup(app, defaults={
@@ -56,32 +48,39 @@ def init(loopy):
     for route in list(app.router.routes()):
         cors.add(route)
 
-    # For graphIQL
-    j_env = Environment(enable_async=True)
-    gql_view = GraphIQL.GraphIQL(schema=schema, jinja_env=j_env, graphiql=True)
-    app.router.add_route('*', handler=gql_view, path="/graphiql", name='graphiql')
+    # For /graphql
+    app.router.add_post('/graphql', graphql, name='graphql')
+    app.router.add_get('/graphql', graphql, name='graphql')
+
+    app.router.add_route('*', path='/graphiql', handler=graphiql)
+
+    runner = web.AppRunner(app)
+    loopy.run_until_complete(runner.setup())
+    site = web.TCPSite(runner, SERVICE_ADDRESS, SERVICE_PORT)
 
     loopy.run_until_complete(
         asyncio.gather(
             asyncio.ensure_future(
-                loopy.create_server(app.make_handler(), SERVICE_ADDRESS, SERVICE_PORT)
+                site.start()
             ),
-            asyncio.ensure_future(
-                amqp_pubsub.AmqpPubSub(configuration.AmqpConnectionConfig(RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ID)).
-                    subscribe("fileAdded", lambda x: handle_event(x))
-            )
+            # For subscribing to rabbitmq
+            # asyncio.ensure_future(
+            #     amqp_pubsub.AmqpPubSub(configuration.AmqpConnectionConfig(RABBITMQ_ADDR, RABBITMQ_PORT, SERVICE_ID)).
+            #     subscribe("fileAdded", lambda x: handle_event(x))
+            # )
         )
     )
 
     try:
-        logging.info("Started server on {}:{}".format(SERVICE_ADDRESS, SERVICE_PORT))
+        logging.info("Started server on {}:{}".format(
+            SERVICE_ADDRESS, SERVICE_PORT))
         loopy.run_forever()
     except Exception as e:
+        runner.shutdown()
         loopy.close()
         logger.error(e)
         sys.exit(-1)
     return None
-
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()

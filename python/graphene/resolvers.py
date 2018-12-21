@@ -1,13 +1,8 @@
-import os
 import sys
 import json
-import uuid
 import schema
 import logging
-from shared.kinddbsvc.KindDBSvc import KindDBSvc
-from settings import KINDDB_SERVICE_URL
 
-kindDB = KindDBSvc(tenantId=0, svcUrl=KINDDB_SERVICE_URL)
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
@@ -16,9 +11,10 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 def info():
     return schema.Info(
-        id="7560bd6b-6a7f-45f9-97e5-38ee65982ae5",
+        id="io.maana.pytemplate",
         name="Maana Python Template",
-        description="This is a python template for using MaanaQ."
+        description="This is a python template for using MaanaQ.",
+        srl=1
     )
 
 

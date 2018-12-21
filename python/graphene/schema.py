@@ -1,54 +1,49 @@
 import graphene
 import resolvers
 
+people_db = {}
 
 class Info(graphene.ObjectType):
     id = graphene.ID(required=True)
     name = graphene.String(required=True)
     description = graphene.String()
+    srl = graphene.Int()
 
 
-class Employee(graphene.ObjectType):
+class Person(graphene.ObjectType):
     id = graphene.ID(required=True)
     name = graphene.String(required=True)
 
-
 class Query(graphene.ObjectType):
     info = graphene.Field(Info)
-    all_employees = graphene.Field(graphene.List(Employee))
+    person = graphene.Field(Person, id=graphene.Argument(graphene.ID, required=True))
 
     def resolve_info(self, _):
         return resolvers.info()
 
-    async def resolve_all_employees(self, _):
-        return await resolvers.all_employees()
+    def resolve_person(self, _, id):
+        return Person(
+            id=id,
+            name=people_db[id]
+        )
 
 
-class AddEmployeeInput(graphene.InputObjectType):
-    id = graphene.ID()
+class AddPersonInput(graphene.InputObjectType):
+    id = graphene.ID(required=True)
     name = graphene.String(required=True)
 
 
-class AddEmployee(graphene.Mutation):
-
+class AddPerson(graphene.Mutation):
     class Arguments:
-        input = AddEmployeeInput(required=True)
+        input = AddPersonInput(required=True)
 
-    Output = Employee
+    Output = graphene.ID
 
-    async def mutate(self, _, input):
-        return await resolvers.add_employee(input)
-
+    def mutate(self, _, input):
+        people_db[input.id] = input.name
+        return input.id
 
 class Mutation(graphene.ObjectType):
-    add_employee = AddEmployee.Field()
-
-
-class FileAdded(graphene.ObjectType):
-    id = graphene.String()
-    name = graphene.String()
-    mimeType = graphene.String()
-    size = graphene.Int()
-
+    add_person = AddPerson.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

@@ -80,6 +80,7 @@ InstanceSetDetailsFragment = """
         typeKindId
       }
     }
+    token
     fieldIds
     records {
       ID
@@ -256,7 +257,8 @@ class KindDBSvc:
         }
         logger.info("getKind kn: {} kid: {}".format(kindName, kindId))
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         if out["data"]["kind"] is None:
             logger.error("No data received from kindDB")
             raise RuntimeError("No data received from kindDB")
@@ -290,7 +292,8 @@ class KindDBSvc:
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         self._check_response(out)
         return out["data"]
 
@@ -315,7 +318,8 @@ class KindDBSvc:
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
 
         logger.info("getInstance kid: {}".format(kindId))
         self._check_response(out)
@@ -342,7 +346,8 @@ class KindDBSvc:
         }
         logger.info("Add relation: {} ".format(addRelationInput))
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         self._check_response(out)
         return out["data"]
 
@@ -367,7 +372,8 @@ class KindDBSvc:
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         logger.info("getLink id: {}".format(linkId))
         self._check_response(out)
         return out["data"]
@@ -387,7 +393,8 @@ class KindDBSvc:
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         logger.info("addLink: {}".format(addLinkInput))
         self._check_response(out)
         return out["data"]
@@ -407,19 +414,21 @@ class KindDBSvc:
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         logger.info("addLinks: {}".format(addLinkInputs))
         self._check_response(out)
         return out["data"]
 
-    async def getAllInstances(self, kindId=None, kindName=None, fieldIds=None, take=0, recursion=False):
+    async def getAllInstances(self, kindId=None, kindName=None, fieldIds=None, take=0, recursion=False, token=None):
         query = string.Template("""
-              query($tenantId: ID!, $kindId: ID, $kindName: String, $take: Int) {
+              query($tenantId: ID!, $kindId: ID, $kindName: String, $take: Int, $token: String) {
                 allInstances(
                   tenantId: $tenantId
                   kindId: $kindId
                   kindName: $kindName
                   take: $take
+                  token: $token
                 ) {
                   $InstanceSetDetails
                 }
@@ -430,14 +439,16 @@ class KindDBSvc:
             "kindId": kindId,
             "kindName": kindName,
             "fieldIds": fieldIds,
-            "take": take
+            "take": take,
+            "token": token
         }
         to_post = {
             "query": query.safe_substitute(InstanceSetDetails=InstanceSetDetailsFragment),
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
 
         if out["data"]["allInstances"] is None:
             return None
@@ -451,22 +462,25 @@ class KindDBSvc:
                 logger.debug("Beginning Nesting")
                 nested_data = {i: await self.getAllInstances(kindId=f['typeKindId'], recursion=True)
                                for (i, f) in ks.items()}
-                new = []
-                for r in insts:
+                new_row = []
+                for row in insts:
                     for i, d in nested_data.items():
                         if d is not None:
-                            to_replace = r[i]
+                            to_replace = row[i]
                             if len(ks[i]['modifiers']) > 0:
                                 new_to_replace = []
                                 for a in to_replace['l_KIND']:
-                                    new_to_replace.append(
-                                        [rs for rs in d['allInstances']['records'] if rs[0]['ID'] == a][0]
-                                    )
-                                r[i]['l_KIND'] = new_to_replace
-                                new.append(r)
+                                    try:
+                                        new_to_replace.append(
+                                            [rs for rs in d['allInstances']['records'] if rs[0]['ID'] == a][0]
+                                        )
+                                    except:
+                                        new_to_replace.append(a)
+                                row[i]['l_KIND'] = new_to_replace
+                                new_row.append(row)
                             elif to_replace['KIND'] is not None:
                                 try:
-                                    r[i]['KIND'] = \
+                                    row[i]['KIND'] = \
                                         [r for r in d['allInstances']['records'] if r[0]['ID'] == to_replace['KIND']][0]
                                 except Exception:
                                     logger.error(
@@ -474,12 +488,12 @@ class KindDBSvc:
                                     logger.error(str(ks[i]))
                                     pass
                             else:
-                                r[i]['KIND'] = None
+                                row[i]['KIND'] = None
                         else:
-                            r[i]['KIND'] = None
+                            row[i]['KIND'] = None
 
-                        new.append(r)
-                out['data']['allInstances']['records'] = new
+                        new_row.append(row)
+                out['data']['allInstances']['records'] = new_row
 
         logger.info("getAllInstances kn: {} kid: {}".format(kindName, kindId))
         self._check_response(out)
@@ -509,7 +523,8 @@ class KindDBSvc:
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         self._check_response(out)
         return out["data"]
 
@@ -548,7 +563,8 @@ class KindDBSvc:
             "variables": variables
         }
         resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
-        out = await resp.json()
+        txt = await resp.text()
+        out = json.loads(txt)
         self._check_response(out)
         return out["data"]
 
@@ -580,3 +596,48 @@ class KindDBSvc:
             logger.error(e)
             logger.error("Unable to get kind {} ".format(kindId))
             return None
+
+    async def addFields(self, kindId, fields):
+        logger.info('addFields')
+        query = string.Template("""
+        mutation($tenantId: ID!, $addFieldsInput: AddFieldsInput!) {
+            addFields(tenantId: $tenantId, input: $addFieldsInput)
+        }
+        """)
+        variables = {
+            "tenantId": self.tenantId,
+            "addFieldsInput": {
+                "kindId": kindId,
+                "fields": fields
+            }
+        }
+        to_post = {
+            "query": query.template,
+            "variables": variables
+        }
+        resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
+        txt = await resp.text()
+        out = json.loads(txt)
+        self._check_response(out)
+        return out["data"]
+
+    async def addKind(self, addKindInput):
+        logger.info('addKind({})'.format(addKindInput))
+        query = string.Template("""
+        mutation($tenantId: ID!, $addKindInput: AddKindInput!) {
+          addKind(tenantId: $tenantId, input: $addKindInput)
+        }
+        """)
+        variables = {
+            "tenantId": self.tenantId,
+            "addKindInput": addKindInput
+        }
+        to_post = {
+            "query": query.template,
+            "variables": variables
+        }
+        resp = await self.session.post(self.svcUrl, data=json.dumps(to_post), headers=self.headers)
+        txt = await resp.text()
+        out = json.loads(txt)
+        self._check_response(out)
+        return out["data"]
