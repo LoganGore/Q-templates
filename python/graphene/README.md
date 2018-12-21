@@ -18,16 +18,6 @@ pip3 install -r requirements.txt
 python3 server.py
 ```
 
-## Queries to try
-
-Get Service Info:
-
-    	curl -XPOST http://localhost:9998/graphql -H 'Content-Type: application/json' -d '{"query": "{ info { id name description }}" }'
-
-Get Random Real:
-
-    	curl -XPOST http://localhost:9998/graphql -H 'Content-Type: application/json' -d '{"query": "{ randomReal { value }}" }'
-
 ## Run unit tests
 
 ```
@@ -35,6 +25,12 @@ python3 -m pytest tests/
 ```
 
 ## Query Examples:
+
+Get Service Info:
+
+```
+    	curl -XPOST http://localhost:7357/graphql -H 'Content-Type: application/json' -d '{"query": "{ info { id name description }}" }'
+```
 
 ```
 mutation a {
