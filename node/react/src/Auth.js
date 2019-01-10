@@ -1,6 +1,6 @@
-import Auth0Lock from "auth0-lock";
+import Auth0Lock from 'auth0-lock'
 
-const RENEW_TOKEN_TIMER_OFFSET = 60000; // 60 seconds
+const RENEW_TOKEN_TIMER_OFFSET = 60000 // 60 seconds
 
 export default class Auth {
   constructor() {
@@ -13,31 +13,31 @@ export default class Auth {
         closable: false,
         rememberLastLogin: false,
         languageDictionary: {
-          title: "Knowledge App Template"
+          title: 'Knowledge App Template'
         },
         auth: {
           redirectUrl: `${window.location.protocol}//${
             window.location.host
           }/callback`,
-          responseType: "token id_token",
+          responseType: 'token id_token',
           audience: process.env.REACT_APP_AUTH_AUDIENCE,
           params: {
-            scope: "openid profile email"
+            scope: 'openid profile email'
           }
         }
       }
     )
-      .on("authenticated", this.handleAuthenticated)
-      .on("authorization_error", this.handleError);
+      .on('authenticated', this.handleAuthenticated)
+      .on('authorization_error', this.handleError)
 
     // schedule a token renewal if we already have a valid access token
-    this.scheduleRenewal();
+    this.scheduleRenewal()
   }
 
   /**
    * Displays the Auth0 login screen
    */
-  login = () => this.lock.show();
+  login = () => this.lock.show()
 
   /**
    * Handles errors during authentication
@@ -45,11 +45,11 @@ export default class Auth {
    * @param {Error} err that happened during auth
    */
   handleError = err => {
-    console.error("Issue during authentication", err);
-    alert(`Error: ${err.error}. Check the console for further details.`);
+    console.error('Issue during authentication', err)
+    alert(`Error: ${err.error}. Check the console for further details.`)
     // return us to the homepage, as we should be at /callback right now
-    window.location.pathname = "/";
-  };
+    window.location.pathname = '/'
+  }
 
   /**
    * Handles saving authentication once we are done signing in
@@ -58,25 +58,25 @@ export default class Auth {
    */
   handleAuthenticated = authResult => {
     // save the session information
-    this.setSession(authResult);
+    this.setSession(authResult)
 
     // get the users profile information
     this.lock.getUserInfo(authResult.accessToken, (err, profile) => {
       if (err) {
-        console.error("Issue getting user information", err);
-        alert(`Error: ${err.error}. Check the console for further details.`);
+        console.error('Issue getting user information', err)
+        alert(`Error: ${err.error}. Check the console for further details.`)
         // return us to the homepage, as we should be at /callback right now
-        window.location.pathname = "/";
-        return;
+        window.location.pathname = '/'
+        return
       }
 
       // save the profile
-      localStorage.setItem("profile", JSON.stringify(profile));
+      localStorage.setItem('profile', JSON.stringify(profile))
 
       // return us to the homepage, as we should be at /callback right now
-      window.location.pathname = "/";
-    });
-  };
+      window.location.pathname = '/'
+    })
+  }
 
   /**
    * Pulls the access token out of local storage and returns it
@@ -84,8 +84,8 @@ export default class Auth {
    * @returns {string} the current access token
    */
   getAccessToken = () => {
-    return localStorage.getItem("access_token");
-  };
+    return localStorage.getItem('access_token')
+  }
 
   /**
    * Pulls the profile out of local storage and returns it
@@ -93,12 +93,12 @@ export default class Auth {
    * @returns {Object} the users profile information
    */
   getProfile = () => {
-    const profile = localStorage.getItem("profile");
+    const profile = localStorage.getItem('profile')
     if (!profile) {
-      return {};
+      return {}
     }
-    return JSON.parse(profile);
-  };
+    return JSON.parse(profile)
+  }
 
   /**
    * saves the information from authenication and schedules a token refresh
@@ -107,14 +107,14 @@ export default class Auth {
    */
   setSession(authResult) {
     // Set the time that the access token will expire at
-    let expiresAt = JSON.stringify(authResult.expiresIn * 1000 + Date.now());
+    let expiresAt = JSON.stringify(authResult.expiresIn * 1000 + Date.now())
 
-    localStorage.setItem("access_token", authResult.accessToken);
-    localStorage.setItem("id_token", authResult.idToken);
-    localStorage.setItem("expires_at", expiresAt);
+    localStorage.setItem('access_token', authResult.accessToken)
+    localStorage.setItem('id_token', authResult.idToken)
+    localStorage.setItem('expires_at', expiresAt)
 
     // schedule a token renewal
-    this.scheduleRenewal();
+    this.scheduleRenewal()
   }
 
   /**
@@ -123,25 +123,25 @@ export default class Auth {
   renewToken() {
     this.lock.checkSession({}, (err, result) => {
       if (err) {
-        this.handleError(err);
+        this.handleError(err)
       } else {
-        this.setSession(result);
+        this.setSession(result)
       }
-    });
+    })
   }
 
   /**
    * When we have a valid access token schedule for it to be renewed.
    */
   scheduleRenewal() {
-    const storedData = localStorage.getItem("expires_at");
+    const storedData = localStorage.getItem('expires_at')
     if (storedData) {
-      const expiresAt = JSON.parse(storedData);
-      const delay = expiresAt - Date.now() - RENEW_TOKEN_TIMER_OFFSET;
+      const expiresAt = JSON.parse(storedData)
+      const delay = expiresAt - Date.now() - RENEW_TOKEN_TIMER_OFFSET
       if (delay > 0) {
         this.tokenRenewalTimeout = setTimeout(() => {
-          this.renewToken();
-        }, delay);
+          this.renewToken()
+        }, delay)
       }
     }
   }
@@ -150,11 +150,11 @@ export default class Auth {
    * Deletes the saved information from local storage
    */
   logout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("id_token");
-    localStorage.removeItem("expires_at");
-    localStorage.removeItem("profile");
-  };
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('id_token')
+    localStorage.removeItem('expires_at')
+    localStorage.removeItem('profile')
+  }
 
   /**
    * Checks is the user is currently authenticated
@@ -164,8 +164,8 @@ export default class Auth {
   isAuthenticated = () => {
     // Check whether the current time is past the
     // access token's expiry time
-    let expiresAt = JSON.parse(localStorage.getItem("expires_at"));
-    const delay = expiresAt - Date.now() - RENEW_TOKEN_TIMER_OFFSET;
-    return delay > 0;
-  };
+    let expiresAt = JSON.parse(localStorage.getItem('expires_at'))
+    const delay = expiresAt - Date.now() - RENEW_TOKEN_TIMER_OFFSET
+    return delay > 0
+  }
 }
