@@ -1,4 +1,0 @@
-type Info {
-  name: String! 
-  version: String
-}
