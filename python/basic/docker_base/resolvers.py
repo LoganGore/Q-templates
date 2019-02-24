@@ -4,9 +4,9 @@ logger = logging.getLogger(__name__)
 
 resolvers = {
     'Query': {
-        'test': lambda value, info, **args: "blah"
+        'info': lambda value, info, **args: "Maana python template. Used as a basis for creating microservices."
     },
     'Mutation': {
-        'test': lambda value, info, **args: "blah"
+        'info': lambda value, info, **args: "Maana python template. Used as a basis for creating microservices."
     },
 }
