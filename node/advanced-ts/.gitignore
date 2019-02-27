@@ -10,7 +10,7 @@ packages/**/dist/
 # Local storage
 packages/**/storage/
 
-packages/logic/src/generated/
+packages/logic/src/generated
 
 ###
 ### Standard stuff
