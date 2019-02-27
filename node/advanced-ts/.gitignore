@@ -1,7 +1,5 @@
 # Generated data
-packages/maana-portal/db/
 package-lock.json
-scripts/schema.graphql
 
 # Mutable service storage
 packages/**/storage/
@@ -11,6 +9,8 @@ packages/**/dist/
 
 # Local storage
 packages/**/storage/
+
+packages/logic/src/generated/
 
 ###
 ### Standard stuff
