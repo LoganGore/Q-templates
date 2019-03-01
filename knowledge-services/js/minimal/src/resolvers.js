@@ -35,13 +35,8 @@ module.exports = {
         srl: process.env.SRL
       }
     },
+
     // ADD CUSTOM RESOLVERS HERE.
-    getName: async (root,{ input }) => { return input.name },
-    getID: async (root,{ input }) => { return input.id },
-    getSpan: async (root,{ input }) => { return input.span },
-    getOffset: async (root,{ input }) => { return input.offset },
-    getSurfaceForm: async (root,{ input }) => { return input.surfaceForm },
-    getMagnitude: async (root,{ input }) => { return input.magnitude },
-    getEntity: async (root, {input} ) => { return input.entity }
+    
   }
 }

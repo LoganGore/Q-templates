@@ -9,36 +9,11 @@ type Info {
   srl:Int
 }
 
-input HasNameIFace { name: String! }
-input HasIDIFace { id: ID! }
-input HasMagnitudeIFace { magnitude: Float! }
-input HasSurfaceFormIFace { surfaceForm: String! }
-input HasSpanIFace { span: Int! }
-input HasOffsetIFace { offset: Int! }
-input HasEntityIFace { entity: EntityInput! }
-
-input EntityInput { id: ID!, name: String! }
-type Entity { id: ID!, name: String! }
-
-type Mention {
-  id: ID!
-  span: Int!
-  offset: Int!
-  surfaceForm: String!
-  entity: Entity
-}
+# ADD YOUR TYPES HERE
 
 type Query {
   info: Info!
-}
 
-extend type Query { 
-  getName( input: HasNameIFace ): String
-  getID( input: HasIDIFace ): ID
-  getMagnitude( input: HasMagnitudeIFace ): Float
-  getSurfaceForm( input: HasSurfaceFormIFace ): String
-  getSpan( input: HasSpanIFace ): Int
-  getOffset( input: HasOffsetIFace ): Int
-  getEntity( input: HasEntityIFace ): Entity
+  # ADD YOUR QUERIES HERE
 }
 

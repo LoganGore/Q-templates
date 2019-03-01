@@ -22,7 +22,7 @@
 =============================================================================*/
 let { initServer } = require('./server.js')
 
-// Add any code that needs to be run prior to starting the server here vv
+// ADD YOUR STARTUP CODE HERE
 
 // start the server
 initServer()

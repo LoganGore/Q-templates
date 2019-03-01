@@ -1,12 +1,9 @@
 {
-  "name": "entity-mention-glue",
-  "author": "Maana, Inc.",
+  "name": "minimal-node-template",
   "license": "MIT",
   "private": true,
   "version": "1.0.0",
-  "description": "Glue code examples for using entity mentions with function composition",
   "main": "src/start.js",
-  "repository": "git@github.com:maana-io/h4/entity-mention-glue",
   "scripts": {
     "dockerize": "source .env;docker build --build-arg PORT=$PORT -t $SERVICE_ID .",
     "start": "node ./src/start.js"
