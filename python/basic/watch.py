@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 
 '''
-
 Implements a watch mode for docker-compose
-
 
 '''
 
@@ -13,13 +11,22 @@ import signal
 import argparse
 from inotify_simple import INotify, flags
 
+start_dir = "."
+
 parser = argparse.ArgumentParser(description='Watch mode for docker-compose.')
 parser.add_argument('--kill', dest='should_kill', action='store_true')
 args = parser.parse_args()
 
 inotify = INotify()
 watch_flags = flags.CREATE | flags.DELETE | flags.MODIFY | flags.DELETE_SELF
-wd = inotify.add_watch('.', watch_flags)
+
+inotify.add_watch(start_dir, watch_flags)
+
+#recursively setup the watches
+for root, dirs, files in os.walk(start_dir):
+	for dir in dirs:
+		print("Watching: ", root + os.sep + dir)
+		inotify.add_watch(root + os.sep + dir, watch_flags)
 
 def watch_loop():
 
