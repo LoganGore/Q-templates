@@ -1,14 +1,31 @@
-FROM alpine:latest
+# python3 development environment with the python3 dependencies for the application
+# -----------------------------------------------------------------------------
+FROM docker.corp.maana.io/alpine_python3 as dependencies
+COPY requirements.txt .
+RUN apk add build-base && pip3 install --no-cache-dir -r requirements.txt && apk del build-base
 
-WORKDIR /app
+# -----------------------------------------------------------------------------
+# Build the application
+# -----------------------------------------------------------------------------
+FROM dependencies as app
+WORKDIR /usr/app
+COPY ./*.py ./
+COPY ./shared ./shared
 
-COPY packages/maana-metalearning /app
+# -----------------------------------------------------------------------------
+# Test the application
+# -----------------------------------------------------------------------------
+FROM app as run-tests
+WORKDIR /usr/app
+#COPY ./tests/service/*.py ./tests/service/
+#RUN coverage run --source=/usr/app -m pytest tests/service/ && coverage report
 
-RUN echo "http://dl-8.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories ;\
-    apk add --update --no-cache --update-cache ca-certificates gcc python3 python3-dev py-pip build-base wget freetype-dev libpng-dev openblas-dev eudev-dev linux-headers ;\
-    ln -s /usr/include/locale.h /usr/include/xlocale.h ;\
-    pip3 install --no-cache-dir -r requirements.txt
-
-EXPOSE 9000
-
-CMD python3 server.py
+# -----------------------------------------------------------------------------
+# CREATE THE DISTRIBUTION IMAGE
+# -----------------------------------------------------------------------------
+FROM dependencies as tested
+WORKDIR /usr/app
+COPY --from=app /usr/app .
+ENV PORT=7357
+EXPOSE 7357
+CMD ["python3", "server.py"]

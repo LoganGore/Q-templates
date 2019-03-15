@@ -4,21 +4,47 @@ This is a template for creating a Maana Knowledge Service in Python. This requir
 
 ## Installation
 
+_NOTE: REQUIRES PYTHON 3_
+
 To install the python packages required, run this:
 
-pip install -r requirements.txt
+```
+pip3 install -r requirements.txt
+```
 
 ## Starting
 
-python server.py
+```
+python3 server.py
+```
 
-## Queries to try
+## Run unit tests
 
-Adds an employee:
+```
+python3 -m pytest tests/
+```
 
-    curl -XPOST http://localhost:7357/graphql -H 'Content-Type: application/json' -d '{"query": "mutation M { addEmployee: addEmployee( input: {id: \"asdf\", name: \"bob\"}) { name } }"}'
+## Query Examples:
 
+Get Service Info:
 
-Gets all employees:
+```
+    	curl -XPOST http://localhost:7357/graphql -H 'Content-Type: application/json' -d '{"query": "{ info { id name description }}" }'
+```
 
-    curl -X POST -H "Content-Type: application/json" -d '{ "query": "{ allEmployees { name } }" }' http://localhost:7357/graphql
+```
+mutation a {
+  addPerson(input:{
+    id:"asdf",
+    name:"fdsa"
+  })
+}
+```
+```
+query b {
+  person(id:"asdf") {
+    id
+    name
+  }
+}
+```

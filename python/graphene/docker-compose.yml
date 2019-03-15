@@ -1,0 +1,36 @@
+version: '2.2'
+
+services:
+
+  # BUILD THE APPLICATION BEING TESTED
+  app:
+    build: .
+    ports:
+      - 7357:7357
+    init: true
+    # image: ${IMG}:${FROM_TAG}
+    healthcheck:
+      test: ping -c 1 127.0.0.1:7357 || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - e2e
+
+  # RUN THE END TO END TESTS
+  e2e:
+    environment:
+      SERVICE_ADDRESS: app
+      SERVICE_PORT: 7357
+    build: ./tests/e2e
+    init: true
+    # image: ${IMG}:e2e
+    networks:
+      - e2e
+    depends_on:
+      app:
+        condition: service_healthy
+
+networks:
+  e2e:
+    driver: bridge

@@ -1,0 +1,247 @@
+# source: http://localhost:4466/demo/dev
+# timestamp: Wed Feb 27 2019 14:28:21 GMT-0800 (Pacific Standard Time)
+
+type AggregateInfo {
+  count: Int!
+}
+
+type BatchPayload {
+  """The number of nodes that have been affected by the Batch operation."""
+  count: Long!
+}
+
+type Info {
+  name: String!
+  version: String
+}
+
+"""A connection to a list of items."""
+type InfoConnection {
+  """Information to aid in pagination."""
+  pageInfo: PageInfo!
+
+  """A list of edges."""
+  edges: [InfoEdge]!
+  aggregate: AggregateInfo!
+}
+
+input InfoCreateInput {
+  name: String!
+  version: String
+}
+
+"""An edge in a connection."""
+type InfoEdge {
+  """The item at the end of the edge."""
+  node: Info!
+
+  """A cursor for use in pagination."""
+  cursor: String!
+}
+
+enum InfoOrderByInput {
+  name_ASC
+  name_DESC
+  version_ASC
+  version_DESC
+  id_ASC
+  id_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+  createdAt_ASC
+  createdAt_DESC
+}
+
+type InfoPreviousValues {
+  name: String!
+  version: String
+}
+
+type InfoSubscriptionPayload {
+  mutation: MutationType!
+  node: Info
+  updatedFields: [String!]
+  previousValues: InfoPreviousValues
+}
+
+input InfoSubscriptionWhereInput {
+  """Logical AND on all given filters."""
+  AND: [InfoSubscriptionWhereInput!]
+
+  """Logical OR on all given filters."""
+  OR: [InfoSubscriptionWhereInput!]
+
+  """Logical NOT on all given filters combined by AND."""
+  NOT: [InfoSubscriptionWhereInput!]
+
+  """
+  The subscription event gets dispatched when it's listed in mutation_in
+  """
+  mutation_in: [MutationType!]
+
+  """
+  The subscription event gets only dispatched when one of the updated fields names is included in this list
+  """
+  updatedFields_contains: String
+
+  """
+  The subscription event gets only dispatched when all of the field names included in this list have been updated
+  """
+  updatedFields_contains_every: [String!]
+
+  """
+  The subscription event gets only dispatched when some of the field names included in this list have been updated
+  """
+  updatedFields_contains_some: [String!]
+  node: InfoWhereInput
+}
+
+input InfoUpdateManyMutationInput {
+  name: String
+  version: String
+}
+
+input InfoWhereInput {
+  """Logical AND on all given filters."""
+  AND: [InfoWhereInput!]
+
+  """Logical OR on all given filters."""
+  OR: [InfoWhereInput!]
+
+  """Logical NOT on all given filters combined by AND."""
+  NOT: [InfoWhereInput!]
+  name: String
+
+  """All values that are not equal to given value."""
+  name_not: String
+
+  """All values that are contained in given list."""
+  name_in: [String!]
+
+  """All values that are not contained in given list."""
+  name_not_in: [String!]
+
+  """All values less than the given value."""
+  name_lt: String
+
+  """All values less than or equal the given value."""
+  name_lte: String
+
+  """All values greater than the given value."""
+  name_gt: String
+
+  """All values greater than or equal the given value."""
+  name_gte: String
+
+  """All values containing the given string."""
+  name_contains: String
+
+  """All values not containing the given string."""
+  name_not_contains: String
+
+  """All values starting with the given string."""
+  name_starts_with: String
+
+  """All values not starting with the given string."""
+  name_not_starts_with: String
+
+  """All values ending with the given string."""
+  name_ends_with: String
+
+  """All values not ending with the given string."""
+  name_not_ends_with: String
+  version: String
+
+  """All values that are not equal to given value."""
+  version_not: String
+
+  """All values that are contained in given list."""
+  version_in: [String!]
+
+  """All values that are not contained in given list."""
+  version_not_in: [String!]
+
+  """All values less than the given value."""
+  version_lt: String
+
+  """All values less than or equal the given value."""
+  version_lte: String
+
+  """All values greater than the given value."""
+  version_gt: String
+
+  """All values greater than or equal the given value."""
+  version_gte: String
+
+  """All values containing the given string."""
+  version_contains: String
+
+  """All values not containing the given string."""
+  version_not_contains: String
+
+  """All values starting with the given string."""
+  version_starts_with: String
+
+  """All values not starting with the given string."""
+  version_not_starts_with: String
+
+  """All values ending with the given string."""
+  version_ends_with: String
+
+  """All values not ending with the given string."""
+  version_not_ends_with: String
+}
+
+"""
+The `Long` scalar type represents non-fractional signed whole numeric values.
+Long can represent values between -(2^63) and 2^63 - 1.
+"""
+scalar Long
+
+type Mutation {
+  createInfo(data: InfoCreateInput!): Info!
+  updateManyInfoes(data: InfoUpdateManyMutationInput!, where: InfoWhereInput): BatchPayload!
+  deleteManyInfoes(where: InfoWhereInput): BatchPayload!
+}
+
+enum MutationType {
+  CREATED
+  UPDATED
+  DELETED
+}
+
+"""An object with an ID"""
+interface Node {
+  """The id of the object."""
+  id: ID!
+}
+
+"""Information about pagination in a connection."""
+type PageInfo {
+  """When paginating forwards, are there more items?"""
+  hasNextPage: Boolean!
+
+  """When paginating backwards, are there more items?"""
+  hasPreviousPage: Boolean!
+
+  """When paginating backwards, the cursor to continue."""
+  startCursor: String
+
+  """When paginating forwards, the cursor to continue."""
+  endCursor: String
+}
+
+type Query {
+  infoes(where: InfoWhereInput, orderBy: InfoOrderByInput, skip: Int, after: String, before: String, first: Int, last: Int): [Info]!
+  infoesConnection(where: InfoWhereInput, orderBy: InfoOrderByInput, skip: Int, after: String, before: String, first: Int, last: Int): InfoConnection!
+
+  """Fetches an object given its ID"""
+  node(
+    """The ID of an object"""
+    id: ID!
+  ): Node
+}
+
+type Subscription {
+  info(where: InfoSubscriptionWhereInput): InfoSubscriptionPayload
+}
