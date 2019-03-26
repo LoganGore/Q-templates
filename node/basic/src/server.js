@@ -137,7 +137,7 @@ const initServer = options => {
 
   httpServer.listen({ port: PORT }, () => {
     log(SELF).info(
-      `listening on ${print.external(`http://${HOSTNAME}:${PORT}`)}`
+      `listening on ${print.external(`http://${HOSTNAME}:${PORT}/graphql`)}`
     )
 
     let auth0 = new AuthenticationClient({
