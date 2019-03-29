@@ -115,7 +115,7 @@ namespace netBox.Schemas
       var beforeCursor = Cursor.FromCursor<DateTime?>(context.Before);
       var cancellationToken = context.CancellationToken;
 
-      var getDroidsTask = GetDroids(droidRepository, first, afterCursor, last, beforeCursor, cancellationToken);
+      var getDroidsTask = GetDroids(droidRepository, first, last, cancellationToken);
       var getHasNextPageTask = GetHasNextPage(droidRepository, first, afterCursor, cancellationToken);
       var getHasPreviousPageTask = GetHasPreviousPage(droidRepository, last, beforeCursor, cancellationToken);
       var totalCountTask = droidRepository.GetTotalCount(cancellationToken);
@@ -125,7 +125,6 @@ namespace netBox.Schemas
       var hasNextPage = getHasNextPageTask.Result;
       var hasPreviousPage = getHasPreviousPageTask.Result;
       var totalCount = totalCountTask.Result;
-      var (firstCursor, lastCursor) = Cursor.GetFirstAndLastCursor(droids, x => x.Created);
 
       return new Connection<Droid>()
       {
@@ -133,7 +132,6 @@ namespace netBox.Schemas
               .Select(x =>
                   new Edge<Droid>()
                   {
-                    Cursor = Cursor.ToCursor(x.Created),
                     Node = x
                   })
               .ToList(),
@@ -141,8 +139,6 @@ namespace netBox.Schemas
         {
           HasNextPage = hasNextPage,
           HasPreviousPage = hasPreviousPage,
-          StartCursor = firstCursor,
-          EndCursor = lastCursor,
         },
         TotalCount = totalCount,
       };
@@ -151,19 +147,17 @@ namespace netBox.Schemas
     private static Task<List<Droid>> GetDroids(
         IDroidRepository droidRepository,
         int? first,
-        DateTime? afterCursor,
         int? last,
-        DateTime? beforeCursor,
         CancellationToken cancellationToken)
     {
       Task<List<Droid>> getDroidsTask;
       if (first.HasValue)
       {
-        getDroidsTask = droidRepository.GetDroids(first, afterCursor, cancellationToken);
+        getDroidsTask = droidRepository.GetDroids(first, cancellationToken);
       }
       else
       {
-        getDroidsTask = droidRepository.GetDroidsReverse(last, beforeCursor, cancellationToken);
+        getDroidsTask = droidRepository.GetDroidsReverse(last, cancellationToken);
       }
 
       return getDroidsTask;
@@ -177,7 +171,7 @@ namespace netBox.Schemas
     {
       if (first.HasValue)
       {
-        return await droidRepository.GetHasNextPage(first, afterCursor, cancellationToken);
+        return await droidRepository.GetHasNextPage(first, cancellationToken);
       }
       else
       {
@@ -193,7 +187,7 @@ namespace netBox.Schemas
     {
       if (last.HasValue)
       {
-        return await droidRepository.GetHasPreviousPage(last, beforeCursor, cancellationToken);
+        return await droidRepository.GetHasPreviousPage(last, cancellationToken);
       }
       else
       {

@@ -27,12 +27,10 @@ namespace netBox.Types
             this.Field(x => x.AppearsIn, type: typeof(ListGraphType<EpisodeEnumeration>))
                 .Description("Which movie they appear in.");
 
-            this.FieldAsync<ListGraphType<CharacterInterface>, List<Character>>(
+            this.FieldAsync<ListGraphType<HumanObject>, List<Human>>(
                 nameof(Human.Friends),
                 "The friends of the character, or an empty list if they have none.",
                 resolve: context => humanRepository.GetFriends(context.Source, context.CancellationToken));
-
-            this.Interface<CharacterInterface>();
         }
     }
 }
