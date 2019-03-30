@@ -146,18 +146,22 @@ namespace netBox
         /// <summary>
         /// Add GraphQL authorization (See https://github.com/graphql-dotnet/authorization).
         /// </summary>
-        public static IServiceCollection AddCustomGraphQLAuthorization(this IServiceCollection services) =>
-            services
-                .AddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>()
-                .AddTransient<IValidationRule, AuthorizationValidationRule>()
-                .AddSingleton(
-                    x =>
-                    {
-                        var authorizationSettings = new AuthorizationSettings();
-                        authorizationSettings.AddPolicy(
-                            AuthorizationPolicyName.Admin,
-                            y => y.RequireClaim("role", "admin"));
-                        return authorizationSettings;
-                    });
+        public static IServiceCollection AddCustomGraphQLAuthorization(this IServiceCollection services) 
+        {
+            // This registers an authorization policy to be used across the application.
+            //     .AddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>()
+            //     .AddTransient<IValidationRule, AuthorizationValidationRule>()
+            //     .AddSingleton(
+            //         x =>
+            //         {
+            //             var authorizationSettings = new AuthorizationSettings();
+            //             authorizationSettings.AddPolicy(
+            //                 AuthorizationPolicyName.Admin,
+            //                 y => y.RequireClaim("role", "admin"));
+            //             return authorizationSettings;
+            //         });
+
+            return services;
+        }
     }
 }

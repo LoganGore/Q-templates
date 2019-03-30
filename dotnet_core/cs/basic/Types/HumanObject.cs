@@ -13,14 +13,16 @@ namespace netBox.Types
         {
             this.Name = "Human";
             this.Description = "A humanoid creature from the Star Wars universe.";
-            // this.AuthorizeWith(AuthorizationPolicyName.Admin); // To require authorization for all fields in this type.
+            // To require authorization for all fields in this type.
+            // this.AuthorizeWith(AuthorizationPolicyName.Admin); 
 
             this.Field(x => x.Id, type: typeof(NonNullGraphType<IdGraphType>))
                 .Description("The unique identifier of the human.");
             this.Field(x => x.Name)
                 .Description("The name of the human.");
             this.Field(x => x.DateOfBirth)
-                .AuthorizeWith(AuthorizationPolicyName.Admin) // Require authorization to access the date of birth field.
+                // To require authorization to access the date of birth field.
+                //.AuthorizeWith(AuthorizationPolicyName.Admin)
                 .Description("The humans date of birth.");
             this.Field(x => x.HomePlanet, nullable: true)
                 .Description("The home planet of the human.");

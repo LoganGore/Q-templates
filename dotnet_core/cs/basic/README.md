@@ -129,6 +129,29 @@ mutation {
 ...
 ```
 
+## Authorization -- Claim-based access
+Authorization is disabled in this template. 
+The "admin" policy can be uncommented in CustomServiceCollectionExtensions.cs.
+Examples of how to add authorization to entire classes or particular fields
+can be seen in Types/HumanObject.cs (currently commented out).
+
+## Application URL/Port
+By default, the application listens on "http://localhost:5000". 
+This can be adjusted in Properties/launchSettings.json. 
+For development, adjust the "applicationUrl" property of the Kestrel config
+object (as shown below):
+```bash
+    "Kestrel": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "",
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+```
+
 ## Additional Resources
 
 GraphQL.org for general graphql concepts and info
