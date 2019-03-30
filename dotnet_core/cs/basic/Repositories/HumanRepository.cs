@@ -20,6 +20,7 @@ namespace netBox.Repositories
         public Task<Human> AddHuman(Human human, CancellationToken cancellationToken)
         {
             human.Id = Guid.NewGuid();
+            human.Friends = human.Friends ?? new List<Guid>();
             Database.Humans.Add(human);
             this.whenHumanCreated.OnNext(human);
             return Task.FromResult(human);
