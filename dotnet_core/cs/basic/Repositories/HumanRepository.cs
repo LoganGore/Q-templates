@@ -31,5 +31,12 @@ namespace netBox.Repositories
 
         public Task<Human> GetHuman(Guid id, CancellationToken cancellationToken) =>
             Task.FromResult(Database.Humans.FirstOrDefault(x => x.Id == id));
+
+        public Task<Human> GetRandomHuman(CancellationToken cancellationToken){
+            Random rnd = new Random();
+            int r = rnd.Next(Database.Humans.Count);
+            return Task.FromResult(Database.Humans.ToList()[r]);
+        }
     }
+
 }

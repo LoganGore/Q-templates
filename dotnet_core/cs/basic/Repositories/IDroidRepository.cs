@@ -10,21 +10,7 @@ namespace netBox.Repositories
     {
         Task<Droid> GetDroid(Guid id, CancellationToken cancellationToken);
 
-        Task<List<Droid>> GetDroids(
-            int? first,
-            CancellationToken cancellationToken);
-
-        Task<List<Droid>> GetDroidsReverse(
-            int? first,
-            CancellationToken cancellationToken);
-
-        Task<bool> GetHasNextPage(
-            int? first,
-            CancellationToken cancellationToken);
-
-        Task<bool> GetHasPreviousPage(
-            int? last,
-            CancellationToken cancellationToken);
+        Task<Droid> GetRandomDroid(CancellationToken cancellationToken);
 
         Task<List<Droid>> GetFriends(Droid droid, CancellationToken cancellationToken);
 

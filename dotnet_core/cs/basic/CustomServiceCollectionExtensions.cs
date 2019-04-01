@@ -132,7 +132,7 @@ namespace netBox
                 // Adds all graph types in the current assembly with a singleton lifetime.
                 .AddGraphTypes()
                 // Adds ConnectionType<T>, EdgeType<T> and PageInfoType.
-                .AddRelayGraphTypes()
+                //.AddRelayGraphTypes()
                 // Add a user context from the HttpContext and make it available in field resolvers.
                 .AddUserContextBuilder<GraphQLUserContextBuilder>()
                 // Add GraphQL data loader to reduce the number of calls to our repository.
