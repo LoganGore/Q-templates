@@ -132,7 +132,7 @@ namespace netBox
                 // Adds all graph types in the current assembly with a singleton lifetime.
                 .AddGraphTypes()
                 // Adds ConnectionType<T>, EdgeType<T> and PageInfoType.
-                .AddRelayGraphTypes()
+                //.AddRelayGraphTypes()
                 // Add a user context from the HttpContext and make it available in field resolvers.
                 .AddUserContextBuilder<GraphQLUserContextBuilder>()
                 // Add GraphQL data loader to reduce the number of calls to our repository.
@@ -146,18 +146,22 @@ namespace netBox
         /// <summary>
         /// Add GraphQL authorization (See https://github.com/graphql-dotnet/authorization).
         /// </summary>
-        public static IServiceCollection AddCustomGraphQLAuthorization(this IServiceCollection services) =>
-            services
-                .AddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>()
-                .AddTransient<IValidationRule, AuthorizationValidationRule>()
-                .AddSingleton(
-                    x =>
-                    {
-                        var authorizationSettings = new AuthorizationSettings();
-                        authorizationSettings.AddPolicy(
-                            AuthorizationPolicyName.Admin,
-                            y => y.RequireClaim("role", "admin"));
-                        return authorizationSettings;
-                    });
+        public static IServiceCollection AddCustomGraphQLAuthorization(this IServiceCollection services) 
+        {
+            // This registers an authorization policy to be used across the application.
+            //     .AddSingleton<IAuthorizationEvaluator, AuthorizationEvaluator>()
+            //     .AddTransient<IValidationRule, AuthorizationValidationRule>()
+            //     .AddSingleton(
+            //         x =>
+            //         {
+            //             var authorizationSettings = new AuthorizationSettings();
+            //             authorizationSettings.AddPolicy(
+            //                 AuthorizationPolicyName.Admin,
+            //                 y => y.RequireClaim("role", "admin"));
+            //             return authorizationSettings;
+            //         });
+
+            return services;
+        }
     }
 }

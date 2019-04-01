@@ -12,8 +12,10 @@ namespace netBox.Repositories
 
         Task<Human> AddHuman(Human human, CancellationToken cancellationToken);
 
-        Task<List<Character>> GetFriends(Human human, CancellationToken cancellationToken);
+        Task<List<Human>> GetFriends(Human human, CancellationToken cancellationToken);
 
         Task<Human> GetHuman(Guid id, CancellationToken cancellationToken);
+
+        Task<Human> GetRandomHuman(CancellationToken cancellationToken);
     }
 }

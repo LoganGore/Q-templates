@@ -11,7 +11,6 @@
 using System;
 using System.Reflection;
 
-[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("netBox-B597A811-46FA-4003-8AC1-680301AC3E8E")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("Project Author")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyCopyrightAttribute("Copyright © Project Author. All rights Reserved")]

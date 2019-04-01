@@ -1,32 +1,53 @@
 # MAANA.IO - .NET Core (C#) - GraphQL Service Template (Basic)
 
 ## What's the purpose of this template?
-
 To provide an example of how a GraphQL service is built using a particular technology stack, in this case .NET Core in C#.
 It is assumed you are familiar with developing .NET applications in C#.
 
 ## What are this template's capabilities?
-
 Basic GraphQL interactions over HTTP. This template creates an application exposing a GraphQL endpoint with a Star Wars theme. With this endpoint you can examine the service's graphql schema, which will tell you about its types, queries, mutations, and subsriptions (look at the additional resources section at the bottom of this page if you don't know what these terms mean). Through the endpoint, and in the visual GraphQL playground, you can execute operations on the example database that is hardcoded in the application. Getting from the project files to an up-and-running application can be accomplished in one command through docker or the .NET Core CLI.
 
 ## What are the key technologies?
-
 -.NET Core and ASP.NET Core
 -GraphQl
 -Docker
 
 ## About the template's dummy database and repository
-
 This template uses a dummy database with a strongly typed repository to help you understand how your datasource (frequenly entity framework (EF) for .NET) can be leveraged via a graphql endpoint with an appropriate level of decoupling.
 
-## Building and running this template
+##Required Software
+- Docker: (developed/tested with version 18.09.3). 
 
-Use either the below Docker or .NET build instructions, then open the GraphQL playgroun exposed by the application in "http://localhost:5000".
+- .NET Core: (developed/tested with version 2.2). **If only starting/running this template with Docker, independent .NET Core download is not necessary as Docker will pull in the .NET Core Runtime. However, for local development and debugging, .NET Core SDK and Runtime are needed.
+
+-IDE: Visual Studio Code recommended (built/tested with version 1.32.3), with C# Extension (Microsoft). Visual Studio 2017 (version 15.3 or newer) is also an option and, additionally, has built in support for Docker. 
+
+***Microsoft resources for .NET Core:
+https://docs.microsoft.com/en-us/dotnet/core/windows-prerequisites?tabs=netcore2x
+
+https://dotnet.microsoft.com/download
+
+https://docs.microsoft.com/en-us/dotnet/core/tutorials/index
+
+https://docs.microsoft.com/en-us/dotnet/core/index
+
+
+***Docker resources for Windows:
+https://docs.docker.com/docker-for-windows/
+
+
+***Docker resources for .NET Core:
+https://hub.docker.com/_/microsoft-dotnet-core
+
+
+## Building and running this template
+Use either the below Docker or .NET build instructions, then open the GraphQL playgroun exposed by the application in "http://localhost:5000". 
 
 -IN .NET (CLI):
 The root-level project directory run the following .NET Core command:
 
 ```bash
+dotnet build
 dotnet run
 ```
 
@@ -37,6 +58,7 @@ The following docker command sequentially builds and then runs in docker.
 ```bash
 docker build -t q_dotnet . && docker run -p 5000:5000 q_dotnet
 ```
+
 
 #Post build/run health check of the service
 -After building and running in docker, you should see the following CLI output from the application:
@@ -52,13 +74,12 @@ Application started. Press Ctrl+C to shut down.
 [21:42:12 INF] CORS policy execution successful.
 [21:42:15 INF] CORS policy execution successful.
 [21:42:18 INF] CORS policy execution successful.
-(CORS MESSAGES WILL CONTINUE)
+(CORS MESSAGES WILL CONTINUE PER REQUEST)
 ```
 
 -Any errors should be visible in this output with stack trace.
 
 ## Example queries in the GraphQL playground
-
 -GraphQL operations can be executed in the graphql playgound on the localhost endpoint in the left-hand side panel.
 --Info Query:
 
@@ -127,6 +148,39 @@ mutation {
 "endTime": "2019-02-26T04:29:21.943681Z",
 ...
 ...
+```
+
+## GraphQL Relay
+GraphQL 'Relay' for paging and connection-based queries is not used in this template, however, it IS supported by dotnet-graphql (the library underlying this template) and can be incorporated fairly easily.
+
+Relay must be enabled in the CustomServiceCollectionExtensions.cs file--it is currently commented out. 
+
+## Query Depth and Complexity
+dotnet-graphql allows for validation to include GraphQL query depth and complexity. Critically, this can prevent denial of service (DOS) where a query's computational or spacial complexity can exceeed a server's resources. 
+
+This can be adjusted as needed in the appsettings.json file.
+
+## Authorization -- Claim-based access
+Authorization is disabled in this template. 
+The "admin" policy can be uncommented in CustomServiceCollectionExtensions.cs.
+Examples of how to add authorization to entire classes or particular fields
+can be seen in Types/HumanObject.cs (currently commented out).
+
+## Application URL/Port
+By default, the application listens on "http://localhost:5000". 
+This can be adjusted in Properties/launchSettings.json. 
+For development, adjust the "applicationUrl" property of the Kestrel config
+object (as shown below):
+```bash
+    "Kestrel": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "",
+      "applicationUrl": "http://localhost:5000",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
 ```
 
 ## Additional Resources
