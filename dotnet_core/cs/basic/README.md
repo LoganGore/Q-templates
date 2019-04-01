@@ -15,13 +15,39 @@ Basic GraphQL interactions over HTTP. This template creates an application expos
 ## About the template's dummy database and repository
 This template uses a dummy database with a strongly typed repository to help you understand how your datasource (frequenly entity framework (EF) for .NET) can be leveraged via a graphql endpoint with an appropriate level of decoupling.
 
+##Required Software
+- Docker: (developed/tested with version 18.09.3). 
+
+- .NET Core: (developed/tested with version 2.2). **If only starting/running this template with Docker, independent .NET Core download is not necessary as Docker will pull in the .NET Core Runtime. However, for local development and debugging, .NET Core SDK and Runtime are needed.
+
+-IDE: Visual Studio Code recommended (built/tested with version 1.32.3), with C# Extension (Microsoft). Visual Studio 2017 (version 15.3 or newer) is also an option and, additionally, has built in support for Docker. 
+
+***Microsoft resources for .NET Core:
+https://docs.microsoft.com/en-us/dotnet/core/windows-prerequisites?tabs=netcore2x
+
+https://dotnet.microsoft.com/download
+
+https://docs.microsoft.com/en-us/dotnet/core/tutorials/index
+
+https://docs.microsoft.com/en-us/dotnet/core/index
+
+
+***Docker resources for Windows:
+https://docs.docker.com/docker-for-windows/
+
+
+***Docker resources for .NET Core:
+https://hub.docker.com/_/microsoft-dotnet-core
+
+
 ## Building and running this template
-Use either the below Docker or .NET build instructions, then open the GraphQL playgroun exposed by the application in "http://localhost:5000".
+Use either the below Docker or .NET build instructions, then open the GraphQL playgroun exposed by the application in "http://localhost:5000". 
 
 -IN .NET (CLI):
 The root-level project directory run the following .NET Core command:
 
 ```bash
+dotnet build
 dotnet run
 ```
 
@@ -32,6 +58,7 @@ The following docker command sequentially builds and then runs in docker.
 ```bash
 docker build -t q_dotnet . && docker run -p 5000:5000 q_dotnet
 ```
+
 
 #Post build/run health check of the service
 -After building and running in docker, you should see the following CLI output from the application:
