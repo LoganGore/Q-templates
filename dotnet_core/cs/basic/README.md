@@ -158,7 +158,7 @@ Relay must be enabled in the CustomServiceCollectionExtensions.cs file--it is cu
 ## Query Depth and Complexity
 dotnet-graphql allows for validation to include GraphQL query depth and complexity. Critically, this can prevent denial of service (DOS) where a query's computational or spacial complexity can exceeed a server's resources. 
 
-This can be adjusted as needed in the appsettings.json file.
+This can be adjusted as needed in the appsettings.json file. Defaults are depth=50 and complexity=1000 (calculated by each field requested being equal to 1 point of complexity).
 
 ## Authorization -- Claim-based access
 Authorization is disabled in this template. 
