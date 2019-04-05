@@ -181,10 +181,6 @@ log(SELF).info(
     req.uploadDir
   )}` + (partIndex ? ` part: ${print.info(partIndex)}` : '')
 )
-```
-
-It seemed worth establishing a common way to do logging. We can improve or change it, but we should have one.
-
 
 # Deploying the Service
 
