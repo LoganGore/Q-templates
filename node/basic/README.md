@@ -198,13 +198,13 @@ You need to have Docker installed and running on your machine.
 
 ## Build and tag the Docker image
 
-    docker build --tag=[ACR_NAME].azurecr.io/[APP_NAME]:[VERSION]
+    docker build --tag=[ACR_NAME].azurecr.io/[SERVICE_NAME]:[VERSION]
 
 Make sure you assign a _unique_ name and version to your image.
 
 ## Push your image into ACR
 
-    docker push [ACR_NAME].azurecr.io/[APP_NAME]:[VERSION]
+    docker push [ACR_NAME].azurecr.io/[SERVICE_NAME]:[VERSION]
 
 ## Run an instance of your application
 
