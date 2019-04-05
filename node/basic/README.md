@@ -184,3 +184,32 @@ log(SELF).info(
 ```
 
 It seemed worth establishing a common way to do logging. We can improve or change it, but we should have one.
+
+
+# Deploying the Service
+
+## Prerequisits
+
+You need to have Docker installed and running on your machine.
+
+## Log into the Azure Container Registery
+
+    docker login --username [USER_NAME] --password [PASSWORD] [ACR_NAME].azurecr.io
+
+## Build and tag the Docker image
+
+    docker build --tag=[ACR_NAME].azurecr.io/[APP_NAME]:[VERSION]
+
+Make sure you assign a _unique_ name and version to your image.
+
+## Push your image into ACR
+
+    docker push [ACR_NAME].azurecr.io/[APP_NAME]:[VERSION]
+
+## Run an instance of your application
+
+1. In the ACR interface in the Azure Portal, click on `Reposetories`
+2. Click on the name of your image. The version tag of your image will appear.
+3. Click on the elipses (...) on the right side of the version tag.
+4. Click on "Run Instance"
+5. Provide the required information to spin up the instance. You'll be required to provide a name, resource group and port. The port should match the one used in your Dockerfile (8050)
