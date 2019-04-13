@@ -68,6 +68,13 @@ namespace netBox.Schemas
               droidRepository.GetDroid(
                   context.GetArgument("id", defaultValue: new Guid("1ae34c3b-c1a0-4b7b-9375-c5a221d49e68")),
                   context.CancellationToken));
+      
+        this.FieldAsync<DroidObject, Droid>(
+          "randomDroid",
+          "Get a random droid from the database.",
+          resolve: context =>
+              droidRepository.GetRandomDroid(context.CancellationToken));
+
       this.FieldAsync<HumanObject, Human>(
           "human",
           "Get a human by its unique identifier.",
@@ -80,6 +87,12 @@ namespace netBox.Schemas
           resolve: context => humanRepository.GetHuman(
               context.GetArgument("id", defaultValue: new Guid("94fbd693-2027-4804-bf40-ed427fe76fda")),
               context.CancellationToken));
+
+      this.FieldAsync<HumanObject, Human>(
+          "randomHuman",
+          "Get a random human from the database.",
+          resolve: context =>
+              humanRepository.GetRandomHuman(context.CancellationToken));
 
       // Just include static info for info query in this case as it's not hitting the dummy repository/database.
       this.Field<InfoObject>(
@@ -94,111 +107,6 @@ namespace netBox.Schemas
 
             };
           });
-
-      this.Connection<DroidObject>()
-          .Name("droids")
-          .Description("Gets pages of droids.")
-          // Enable the last and before arguments to do paging in reverse.
-          .Bidirectional()
-          // Set the maximum size of a page, use .ReturnAll() to set no maximum size.
-          .PageSize(MaxPageSize)
-          .ResolveAsync(context => ResolveConnection(droidRepository, context));
-    }
-
-    private async static Task<object> ResolveConnection(
-        IDroidRepository droidRepository,
-        ResolveConnectionContext<object> context)
-    {
-      var first = context.First;
-      var afterCursor = Cursor.FromCursor<DateTime?>(context.After);
-      var last = context.Last;
-      var beforeCursor = Cursor.FromCursor<DateTime?>(context.Before);
-      var cancellationToken = context.CancellationToken;
-
-      var getDroidsTask = GetDroids(droidRepository, first, afterCursor, last, beforeCursor, cancellationToken);
-      var getHasNextPageTask = GetHasNextPage(droidRepository, first, afterCursor, cancellationToken);
-      var getHasPreviousPageTask = GetHasPreviousPage(droidRepository, last, beforeCursor, cancellationToken);
-      var totalCountTask = droidRepository.GetTotalCount(cancellationToken);
-
-      await Task.WhenAll(getDroidsTask, getHasNextPageTask, getHasPreviousPageTask, totalCountTask);
-      var droids = getDroidsTask.Result;
-      var hasNextPage = getHasNextPageTask.Result;
-      var hasPreviousPage = getHasPreviousPageTask.Result;
-      var totalCount = totalCountTask.Result;
-      var (firstCursor, lastCursor) = Cursor.GetFirstAndLastCursor(droids, x => x.Created);
-
-      return new Connection<Droid>()
-      {
-        Edges = droids
-              .Select(x =>
-                  new Edge<Droid>()
-                  {
-                    Cursor = Cursor.ToCursor(x.Created),
-                    Node = x
-                  })
-              .ToList(),
-        PageInfo = new PageInfo()
-        {
-          HasNextPage = hasNextPage,
-          HasPreviousPage = hasPreviousPage,
-          StartCursor = firstCursor,
-          EndCursor = lastCursor,
-        },
-        TotalCount = totalCount,
-      };
-    }
-
-    private static Task<List<Droid>> GetDroids(
-        IDroidRepository droidRepository,
-        int? first,
-        DateTime? afterCursor,
-        int? last,
-        DateTime? beforeCursor,
-        CancellationToken cancellationToken)
-    {
-      Task<List<Droid>> getDroidsTask;
-      if (first.HasValue)
-      {
-        getDroidsTask = droidRepository.GetDroids(first, afterCursor, cancellationToken);
-      }
-      else
-      {
-        getDroidsTask = droidRepository.GetDroidsReverse(last, beforeCursor, cancellationToken);
-      }
-
-      return getDroidsTask;
-    }
-
-    private static async Task<bool> GetHasNextPage(
-        IDroidRepository droidRepository,
-        int? first,
-        DateTime? afterCursor,
-        CancellationToken cancellationToken)
-    {
-      if (first.HasValue)
-      {
-        return await droidRepository.GetHasNextPage(first, afterCursor, cancellationToken);
-      }
-      else
-      {
-        return false;
-      }
-    }
-
-    private static async Task<bool> GetHasPreviousPage(
-        IDroidRepository droidRepository,
-        int? last,
-        DateTime? beforeCursor,
-        CancellationToken cancellationToken)
-    {
-      if (last.HasValue)
-      {
-        return await droidRepository.GetHasPreviousPage(last, beforeCursor, cancellationToken);
-      }
-      else
-      {
-        return false;
-      }
     }
   }
 }
