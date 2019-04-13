@@ -1,6 +1,0 @@
-projects:
-  basic:
-    schemaPath: schema.graphql
-    extensions:
-      endpoints:
-        default: http://localhost:8050/graphql

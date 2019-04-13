@@ -1,7 +1,0 @@
-type Query {
-  info: Info
-}
-
-type Mutation {
-  info: Info
-}
