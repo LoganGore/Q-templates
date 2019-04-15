@@ -1,6 +1,15 @@
 {
   "passPerPreset": true,
-  "presets": ["@babel/preset-env"],
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "node": "9"
+        }
+      }
+    ]
+  ],
   "plugins": [
     [
       "@babel/plugin-transform-runtime",
