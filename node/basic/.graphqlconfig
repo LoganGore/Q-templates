@@ -1,12 +1,17 @@
 {
-	"projects": {
-		"basic": {
-			"schemaPath": "schema.graphql",
-			"extensions": {
-				"endpoints": {
-					"default": "http://localhost:8050/graphql"
-				}
-			}
-		}
-	}
+  "projects": {
+    "service": {
+      "schemaPath": "schemas/service.graphql",
+      "extensions": {
+        "endpoints": {
+          "default": {
+            "url": "http://localhost:8050/graphql",
+            "headers": {
+              "Authorization": "Bearer ${env:MAANA_AUTH_TOKEN}"
+            }
+          }
+        }
+      }
+    }
+  }
 }

@@ -1,13 +1,15 @@
+# Scalars
 scalar Date
-
 scalar JSON
 
+# Boilerplate
 type Info {
   id: ID!
   name: String!
   description: String
 }
 
+# Custom Types
 type Person {
   # Kind fields
   id: ID! # internal identifier (unique)
@@ -17,7 +19,7 @@ type Person {
   dateOfBirth: Date
 }
 
-# Create a Person instance
+# Custom Inputs
 input PersonInput {
   id: ID # if known, otherwise one will be generated
   name: String
@@ -26,21 +28,25 @@ input PersonInput {
   dateOfBirth: Date
 }
 
-# Standard queries (instance and batch)
+# Query Root
 type Query {
+  # Boilerplate
   info: Info
+
+  # Custom queries
   allPeople: [Person!]!
   person(id: ID!): Person
 }
 
-# Standard mutations (instance and batch)
+# Mutation Root
 type Mutation {
+  # Custom mutations
   addPerson(input: PersonInput): ID
   updatePerson(input: PersonInput): ID
   deletePerson(id: ID!): Person
 }
 
-# Standard events
+# Custom Event Types
 type PersonEvent {
   id: ID
   name: String
@@ -49,7 +55,9 @@ type PersonEvent {
   dateOfBirth: Date
 }
 
+# Subscription Root
 type Subscription {
+  # Custom events
   personAdded: PersonEvent!
   personUpdated: PersonEvent!
   personDeleted: PersonEvent!

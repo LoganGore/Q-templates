@@ -3,7 +3,6 @@
 //
 
 // load .env into process.env.*
-require('dotenv').config()
 // routing engine
 import express from 'express'
 // middleware to allow cross-origin requests
@@ -29,6 +28,7 @@ import {
   counter,
   BuildGraphqlClient
 } from 'io.maana.shared'
+require('dotenv').config()
 
 const options = {
   mode: 'js' // default
@@ -49,13 +49,13 @@ export const schema = makeExecutableSchema({
 
 //
 // Client setup
-// - allow this service to be a client of a remote service
+// - allow this service to be a client of Maana Q's Computational Knowledge Graph
 //
 let client
 const clientSetup = token => {
   if (!client) {
     // construct graphql client using endpoint and context
-    client = BuildGraphqlClient(REMOTE_KSVC_ENDPOINT_URL, (_, { headers }) => {
+    client = BuildGraphqlClient(CKG_ENDPOINT_URL, (_, { headers }) => {
       // return the headers to the context so httpLink can read them
       return {
         headers: {
@@ -71,7 +71,7 @@ const clientSetup = token => {
 // Server setup
 //
 // Our service identity
-const SELF = process.env.SERVICE_ID || 'io.maana.template'
+const SELF = process.env.SERVICE_ID || 'maana-service'
 
 // HTTP port
 const PORT = process.env.PORT
@@ -83,7 +83,7 @@ const HOSTNAME = process.env.HOSTNAME || 'localhost'
 const PUBLICNAME = process.env.PUBLICNAME || 'localhost'
 
 // Remote (peer) services we use
-const REMOTE_KSVC_ENDPOINT_URL = process.env.REMOTE_KSVC_ENDPOINT_URL
+const CKG_ENDPOINT_URL = process.env.CKG_ENDPOINT_URL
 
 const app = express()
 
@@ -111,15 +111,13 @@ const defaultSocketMiddleware = (connectionParams, webSocket) => {
   })
 }
 
-initMetrics(SELF)
+initMetrics(SELF.replace('-', '.'))
 const graphqlRequestCounter = counter('graphqlRequests', 'it counts')
 
 const initServer = options => {
   let { httpAuthMiddleware, socketAuthMiddleware } = options
 
-  let socketMiddleware = socketAuthMiddleware
-    ? socketAuthMiddleware
-    : defaultSocketMiddleware
+  let socketMiddleware = socketAuthMiddleware || defaultSocketMiddleware
 
   const server = new ApolloServer({
     schema,
