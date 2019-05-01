@@ -7,18 +7,13 @@
   "main": "src/start.js",
   "repository": "git@github.com:maana-io/q-svc-templates.git",
   "scripts": {
-    "build": "./node_modules/.bin/babel ./src -d ./dist --copy-files",
     "docker-build": "docker build -t maana-service .",
     "docker-run": "docker run -p 8050:8050 maana-service",
     "precommit": "lint-staged",
     "prettier": "./node_modules/.bin/prettier --write \"src/**/*.{js,jsx}\"",
-    "start": "node ./dist/start.js",
-    "startdev": "node ./dist/start.dev.js",
-    "predeploy": "npm-run-all build docker-build",
+    "start": "babel-node ./src/start.js",
     "dbg": "nodemon --inspect ./src/start.dev.js --exec babel-node -e js",
-    "dev": "nodemon ./src/start.dev.js --exec babel-node -e js",
-    "disableAuth": "nodemon ./src/start.dev.js --exec babel-node -e js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon ./src/start.dev.js --exec babel-node -e js"
   },
   "lint-staged": {
     "src/**/*.{js,jsx,json,css}": [
