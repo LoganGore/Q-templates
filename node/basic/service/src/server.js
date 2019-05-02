@@ -111,7 +111,7 @@ const defaultSocketMiddleware = (connectionParams, webSocket) => {
   })
 }
 
-initMetrics(SELF.replace(/[\W_]+/g, ' '))
+initMetrics(SELF.replace(/[\W_]+/g, ''))
 const graphqlRequestCounter = counter('graphqlRequests', 'it counts')
 
 const initServer = options => {
