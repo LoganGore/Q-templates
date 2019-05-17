@@ -12,3 +12,10 @@ auth0-python
 python-dotenv==0.8.2
 aio_pika==2.3.0
 python-dateutil==2.5.0
+tqdm==4.31.1
+mysql-connector-python
+pytz
+pandas
+numpy
+inotify_simple
+graphql-core-next==1.0.2

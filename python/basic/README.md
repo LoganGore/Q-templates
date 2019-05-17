@@ -1,46 +1,250 @@
-# Maana Python Template
 
-## Local Build & Deploy Simplified
+# Maana Python 3.7 Template
 
-In order to build the solution locally you will need docker and docker-compose.
+This template is designed to make quick work of creating new [GraphQL](http://graphql.org) microservices for use inside [Maana Q](https://www.maana.io/knowledge-platform/). It was created by Almir Alemic, Ashish Juneja and Andrew Spode, members of Maana's Customer Solutions team. 
 
-To build the solution run:
+## Getting Started
+
+To use this template, you will need [docker-compose](https://docs.docker.com/compose/install/) installed. You **do not** need Python or any of its package requirements installed. Everything is run inside the docker container - both during production and development.
+
+Once you have docker-compose installed, from a Linux/Mac terminal, navigate to your folder and  run:
+
+> ./build_and_deploy.sh
+
+If you are using Windows, instead run:
+
+> ./build_and_deploy.bat
+
+It will then download all requirements to build the container, eventually leaving you with the helloWorld service running on port 8001. It may take a while on the first build, but subsequent builds are faster and only services that change require rebuilding.
+
+[GraphiQL](https://github.com/graphql/graphiql), a web based application for simple testing of your services, is built in to every service. Test your service is running by visiting [http://localhost:8001/graphiql](http://localhost:8001/graphiql)
+
+Use the following query:
 
 ```
-docker-compose build
+{
+  helloWorld(name:"World")
+}
 ```
 
-To deploy run:
+Press the big play button, and you should be greeted with your familiar "Hello World!" response.
+
+The GraphQL endpoint is on [http://localhost:8001/graphql](http://localhost:8001/graphql) (note the missing "i"). To integrate this into Q while developing, you may find [ngrok](https://ngrok.com/) a useful tool for exposing it on a public URL.
+
+## Building Your Own Services
+
+This template has been designed for creating multiple services at the same time, quickly. This encourages you to break your services down into as many smaller services as possible for, amongst other reasons, reusability. 
+
+Inside the **/services** folder you will see our **hello_world** folder. This contains all the code pertaining to that service. To add our second service, we will duplicate this folder and we'll call it **hello_again**.
+
+Next, we need to edit **docker_compose.yml** to add a new entry for our service. If you duplicate our hello_world entry, you will only need to update the names and the port, like this:
 
 ```
-docker-compose up
+version: "3"
+services:
+  python-base:
+    build:
+      context: service_base/
+      dockerfile: Dockerfile
+    image: base-python-micro:latest
+  hello_world:
+    build: services/hello_world/
+    volumes:
+      - ./services/hello_world/:/service_source
+      - ./service_base/:/service_base_source  
+    ports:
+      - "8001:8050"
+    depends_on:
+      - "python-base"
+```
+*Becomes...*
+
+<pre><code>version: "3"
+services:
+  python-base:
+    build:
+      context: service_base/
+      dockerfile: Dockerfile
+    image: base-python-micro:latest
+  hello_world:
+    build: services/hello_world/
+    volumes:
+      - ./services/hello_world/:/service_source
+      - ./service_base/:/service_base_source  
+    ports:
+      - "8001:8050"
+    depends_on:
+      - "python-base"
+  <b>hello_again:
+    build: services/hello_again/
+    volumes:
+      - ./services/hello_again/:/service_source
+      - ./service_base/:/service_base_source  
+    ports:
+      - "8002:8050"
+    depends_on:
+      - "python-base"</b>
+</code></pre>
+All of the services internally run on port 8050, so to change the port of a service you only need to edit this one file - not the service itself. Those familiar with with Docker may be wondering why we are mounting these volumes. These are used by the services built in *watch mode* and are not necessary if running in production.
+
+## Schema
+
+There are four key [GraphQL Schema](https://graphql.org/learn/schema/) files that our services will use, stored either in the Service Base (**/service_base/schema**) for shared use, or inside each services own schema folder (eg. **/services/hello_world/schema**)
+
+### Service Schema
+
+**query.gql** and **mutation.gql** are evidently used for defining the queries and mutations that your service exposes. 
+
+In our hello world example, if we wanted to add a new function for generating a Person:
+
+```
+type Query {
+    info: String
+    helloWorld (name: String): String
+}
 ```
 
-Back-end GraphQL endpoint will be available at http://localhost:8050/graphql
+*Becomes...*
 
-GraphIQL interface available at http://localhost:8050/graphiql
+<pre><code>type Query {
+    info: String
+    helloWorld (name: String): String
+    <b>createPerson (firstName: String, secondName: String): Person</b>
+}</code></pre>
 
-## Docker Compose Build
+### Service Base Schema
 
-Docker-compose build will create images off of the instructions in the Docker files being pointed to.
+These files are stored in **/service_base/schema** and will be used by all services.
 
-These images will be the basis of the services that will be deployed.
+**model.gql** is where we will define our types, inputs and scalars etc. that **all** of the services use. When each service is built, it will **automatically remove** anything that is not used on a per-service basis, so you don't need to worry about your model becoming too big. 
 
-Any time you make a change to the services you will need to rerun docker-compose build.
+As we are using a new type (Person) we would need to add this to our model.gql.
 
-Docker caches the results of builds, so only the service or image that has changed will be rebuilt.
+```
+schema {
+  query: Query
+  mutation: Mutation
+}
+```
 
-The first time you run this it might take some time, any time after will be quicker.
+*Becomes...*
 
-The base image contains all of the packages and pips that the project is dependent on as well as a template for a microservice. Since this changes rarely we don't want to rerun this frequently. Once it is run once it will only be rerun if the contents of docker_base change.
+<pre><code>schema {
+  query: Query
+  mutation: Mutation
+}
 
-The service image is based off of the docker_base image. anything in docker_base can be modified and tailored to the service by adding the same filename to the service. All of the files in the service directory are copied over the files in the base directory and then server is started. This way, many services can use the same base image and have different resolvers, models, etc.
+<b>type Person {
+  firstName: String
+  secondName: String
+  fullName: String
+}</b></code></pre>
 
-## Docker Compose Up
+Now any of our services will all have access to this new type, Person.
 
-Docker-compose up brings up the built images as services.
+**portal.gql** won't be used by everyone. If you have made a domain model in Q, and want to use it inside your services and you have chosen **not to store your data on Q**, go to the admin panel in Q and find your workspace. Click "Test" and you will get a full schema for your domain model. Paste the contents in to this file and the template will **convert it automatically** to the right format. 
+
+## Resolvers
+
+Now we have a function defined in our schema, we have to write the Python code to *resolve* this function. This is done in **resolvers.py** inside our service. Let's add our new function in.
+
+```
+resolvers = {
+    'Query': {
+        'info': lambda value, info, **args: "Hello World example.",
+        'helloWorld': helloWorld
+    },
+    'Mutation': {
+        'info': lambda value, info, **args: "Hello World example."
+    }    
+}
+```
+
+*Becomes...*
+
+<pre><code>resolvers = {
+    'Query': {
+        'info': lambda value, info, **args: "Hello World example.",
+        'helloWorld': helloWorld<b>,
+        'createPerson': createPerson</b>
+    },
+    'Mutation': {
+        'info': lambda value, info, **args: "Hello World example."
+    }    
+}</code></pre>
+
+Now we can define our function in a normal Python manner.
+
+```
+def createPerson(value, info, **args):
+  fullName = f"{args['firstName']} {args['lastName']}"
+
+  return {
+    "firstName": args['firstName'], 
+    "lastName": args['lastName'],
+    "fullName": fullName
+  }
+```
+Notice how all of our query parameters are inside the "args" dictionary. We do whatever processing we want to do and then return value is a dictionary in the shape of the type defined in our query - in this case *Person*.
+
+Any additional packages required can be added to **requirements.txt** inside service_base. Otherwise, this is all that is required to create a new service and function that is ready to add to Q.
+
+## Caching
+
+The template has a built in caching mechanism that is particularly useful for computationally expensive queries. This is done in the form of a decorator.
+
+```
+def dummyFunction(value, info, **args):
+  pass  
+```
+
+*Becomes...*
+
+<pre><code><b>@cache_query()</b>
+def dummyFunction(value, info, **args):
+  pass  
+</code></pre>
+
+Caching is based off the name of the resolver, plus the **parameters provided**. In our example above, it would be cached on a per Person basis, as the parameters would be different. Be careful when caching queries that use dynamic data, such as the current time, or random numbers etc. 
+
+Cache is stored inside the docker container, currently **on disk**. Using this for computationally light functions may in fact be slower due to the overhead of calculating cache keys and disk reads.
+
+The cache_query decorator takes two optional parameters:
+
+### ttl 
+
+> @cache_query(ttl=3600)
+
+This is the time in seconds that the cache is valid for, with a default of **3600** (1 hour)
+
+### persistent
+
+> @cache_query(persistent=True)
+
+When persistent is switched on, the cache is no longer stored inside the docker container, but **on the host** itself. It also **ignores the ttl** parameter. This is mostly useful when developing and you have complex functions that you would like to persist even after you restart the container. 
+
+### Wiping Cache
+
+Each time the container is restarted, or the watch mode restarts the application, the temporary cache is **wiped automatically**. Persistent cache is never wiped automatically. If you would like to wipe either of the caches, two endpoints are exposed to do so.
+
+[http://localhost:8001/clearTemporaryCache](http://localhost:8001/clearTemporaryCache)
+[http://localhost:8001/clearPersistentCache](http://localhost:8001/clearPersistentCache)
+
+## Watch Mode
+
+Each service has a built in watch mode. This means, when you change your code, the service will **automatically restart** with the new code changes in place, for quick development. *However, should you adjust requirements.txt, or add new services, you will need to terminate (ctrl^c) the running services and re-run the build_and_deploy script.*
+
+Although this has been tested on Mac and Linux, it is currently not believed to be working on Windows.
+
+## Debugging
+
+Each service has a basic debug endpoint, where you can see the last query, how long it took and the payload. You can copy and paste the query/variables directly into GraphiQL for testing queries that might have failed.
+
+[http://localhost:8001/debug](http://localhost:8001/debug)
 
 ## Azure Kubernetes Service Deployment Steps
+
+Docker compose will create docker images for each of your services that can be deployed independently of each other, ideal for deployment on Kubernetes or other container management systems.
 
 ### Prerequisites
 
