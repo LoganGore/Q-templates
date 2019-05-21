@@ -2,7 +2,7 @@
 
 # Maana Python 3.7 Template
 
-This template is designed to make quick work of creating new [GraphQL](http://graphql.org) microservices for use inside [Maana Q](https://www.maana.io/knowledge-platform/). It was created by Almir Alemic, Ashish Juneja and Andrew Spode, members of Maana's Customer Solutions team. 
+This template is designed to make quick work of creating new [GraphQL](http://graphql.org) microservices for use inside [Maana Q](https://www.maana.io/knowledge-platform/). It was created by Alexander Elkholy, Almir Alemic, Ashish Juneja and Andrew Spode, members of Maana's Customer Solutions team. 
 
 ## Getting Started
 

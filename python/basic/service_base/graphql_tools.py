@@ -16,6 +16,7 @@ import subprocess
 # BE WARNED - THE ONLY WAY TO FLUSH IS TO RESET THE SERVICE. Do not use with changing data.
 # Persistent is mainly for development help, as it will persist even when yo urestart the service. Be careful.
 
+
 def empty_cache(persistent=False):
 
     cache_folder = "cache"
@@ -46,7 +47,7 @@ def cache_query(ttl=3600, persistent=False):
             if persistent:
                 cache_folder = '/service_source/cache'
 
-            tmp_file = cache_folder + '/query_' + cache_key
+            tmp_file = cache_folder + f'/{original_func.__name__}_' + cache_key
 
             cached_result = False
 
@@ -90,6 +91,7 @@ def cache_query(ttl=3600, persistent=False):
 # accepts schema_definition (string) and resolvers (object) in style of graphql-tools
 # returns a schema ready for execution
 
+
 def build_executable_schema(schema_definition, resolvers, scalars):
     ast = graphql.parse(schema_definition)
     schema = graphql.build_ast_schema(ast)
@@ -126,6 +128,7 @@ def build_executable_schema(schema_definition, resolvers, scalars):
                     lambda value, info, _r=remaining, **args: value[_r] if _r in value else None
 
     return schema
+
 
 def schema_prioritise(base_schema, priority_schema):
     '''Parse base & priority strings into GraphQL Schemas'''
