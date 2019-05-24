@@ -1,28 +1,18 @@
-import os
 from aiohttp import web
 import aiohttp_cors
+import asyncio
+import os
 import json
 import logging
-import asyncio
 import sys
 import graphql as gql
-import json
-import traceback
 import graphql_tools
-from resolvers import resolvers
-from scalars import scalars
-from graphql.execution.executors.asyncio import AsyncioExecutor
-import graphql
-from graphqlclient import GraphQLClient
-from graphql_tools import build_executable_schema
-from graphql_tools import empty_cache
+from timeit import default_timer as timer
 
-from shared.graphiql import GraphIQL
-from CKGClient import CKGClient
 from settings import SERVICE_ADDRESS, SERVICE_PORT, PROJECT_ROOT, LOG_LEVEL
 from context import context_vars
-import sys
-from timeit import default_timer as timer
+from resolvers import resolvers
+from scalars import scalars
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
@@ -42,7 +32,7 @@ with open("schema/model.gql", "r") as f:
         source_schema = graphql_tools.schema_prioritise(source_schema, model_schema)
     except:
         source_schema = source_schema + "\n" + model_schema
-
+        
 # Open our schema one by one and override anything we find in the portal
 with open("schema/mutation.gql", "r") as f:
     mutation_schema = f.read()
@@ -53,45 +43,47 @@ with open("schema/query.gql", "r") as f:
     source_schema = source_schema + "\n" + query_schema
 
 # Remove any unused types from our schema so our service is nice and trim
-ast = graphql.parse(source_schema)
-schema = graphql.build_ast_schema(ast)
+ast = gql.parse(source_schema)
+schema = gql.build_ast_schema(ast)
 filtered_set = graphql_tools.get_all_types_from_query_and_mutation(schema)
 trimmed = graphql_tools.filter_schema(schema, filtered_set)
+executable_schema = graphql_tools.build_executable_schema(trimmed, resolvers, scalars)
 
-executable_schema = build_executable_schema(trimmed, resolvers, scalars)
-
-async def handle_event(x):
-    data_in = x.decode('utf8')
-    logger.info("Got event: " + data_in)
-    # await handle(data_in)
-    return None
-
-def init(loopy):
-    asyncio.set_event_loop(loopy)
+async def init():
     app = web.Application(client_max_size=52428800)
-    graphql_executor = AsyncioExecutor(loop=loopy)
 
     # store information here for our /debug endpoint
     last_request = {}
 
     async def graphql(request):
         query_start = timer()
-        back = await request.json()
+
+        #If there is no request, it gives a 500
+        try:
+            back = await request.json()
+        except:
+            return web.Response(text="Did you want <a href=/graphiql>GraphiQL</a>?", headers={'Content-Type': 'text/html'})
+
         variables = back.get('variables', '')
+        query = back.get('query', '')
+        operation_name = back.get('operationName', '')
+
+        #usually no variables, which causes it to fail
         if not variables:
             variables = {}
 
-        result = await gql.graphql(executable_schema, back.get('query', ''), variable_values=variables, operation_name=back.get('operationName', ''), context_value=context_vars)
+        result = await gql.graphql(executable_schema, query, variable_values=variables, operation_name=operation_name, context_value=context_vars)
+
         # to store our response in
         data = {}
 
         # handle any errors
         if result.errors:
             for err in result.errors:
-                #tb = traceback.format_exc()
-                logger.error("error " + str(err))
+                logger.error("Error: " + str(err))
                 continue
             data['errors'] = [str(err) for err in result.errors]
+        
         if result.data:
             data['data'] = result.data
 
@@ -100,8 +92,8 @@ def init(loopy):
         # store our debug information
         last_request['query_time'] = query_end - query_start
         last_request['request'] = {
-            "query": back.get('query', ''),
-            "variables": back.get('variables', '')
+            "query": query,
+            "variables": variables
         }
         last_request['data'] = False
         last_request['errors'] = False
@@ -123,11 +115,11 @@ def init(loopy):
         return web.Response(text=json.dumps(last_request), headers={'Content-Type': 'application/json'})
 
     async def clearTemporaryCache(request):
-        empty_cache()
+        graphql_tools.empty_cache()
         return web.Response(text='{"result": "success"}', headers={'Content-Type': 'application/json'})
 
     async def clearPersistentCache(request):
-        empty_cache(persistent=True)
+        graphql_tools.empty_cache(persistent=True)
         return web.Response(text='{"result": "success"}', headers={'Content-Type': 'application/json'})
 
     # Configure default CORS settings.
@@ -139,65 +131,42 @@ def init(loopy):
         )
     })
 
+    #Add our routes to CORS - I'm not sure why this is done beforehand?
+    #TODO: Check this is working, and/or not included in the aiohttp as standard now
     for route in list(app.router.routes()):
         cors.add(route)
 
-    # For /graphql
-    app.router.add_post('/graphql', graphql, name='graphql')
-    app.router.add_get('/graphql', graphql, name='graphql')
-
-    # used for fetching things like the last queries
-    app.router.add_post('/debug', debug, name='debug')
-    app.router.add_get('/debug', debug, name='debug')
-
-    # Delete cache
-    app.router.add_post('/clearTemporaryCache',
-                        clearTemporaryCache, name='clearTemporaryCache')
-    app.router.add_get('/clearTemporaryCache',
-                       clearTemporaryCache, name='clearTemporaryCache')
-
-    # Delete persistent cache
-    app.router.add_post('/clearPersistentCache',
-                        clearPersistentCache, name='clearPersistentCache')
-    app.router.add_get('/clearPersistentCache',
-                       clearPersistentCache, name='clearPersistentCache')
-
+    app.router.add_route('*', path='/clearTemporaryCache', handler=clearTemporaryCache)
+    app.router.add_route('*', path='/clearPersistentCache', handler=clearPersistentCache)
+    app.router.add_route('*', path='/debug', handler=debug)
+    app.router.add_route('*', path='/graphql', handler=graphql)
     app.router.add_route('*', path='/graphiql', handler=graphiql)
 
-    for route in list(app.router.routes()):
-        try:
-            cors.add(route)
-        except:
-            continue
-
-    runner = web.AppRunner(app)
-    loopy.run_until_complete(runner.setup())
-    site = web.TCPSite(runner, SERVICE_ADDRESS, SERVICE_PORT)
-
-    loopy.run_until_complete(
-        asyncio.gather(
-            asyncio.ensure_future(
-                site.start()
-            )
-        )
-    )
-
+    #Start the site
     try:
-        logging.info("Started server on {}:{}".format(
-            SERVICE_ADDRESS, SERVICE_PORT))
-        loopy.run_forever()
+        runner = web.AppRunner(app)   
+        await runner.setup()
+
+        site = web.TCPSite(runner, SERVICE_ADDRESS, SERVICE_PORT)
+        await site.start()
+
+        logging.info(f"Started server on {SERVICE_PORT}")
+    #Fails to launch
     except Exception as e:
-        runner.shutdown()
-        loopy.close()
+        runner.cleanup()
         logger.error(e)
         sys.exit(-1)
-    return None
 
+    #so we can terminate cleanly in main
+    return runner, site
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     loop = asyncio.get_event_loop()
+    runner, site = loop.run_until_complete(init())
+
     try:
-        init(loop)
+        loop.run_forever()
     except KeyboardInterrupt:
-        loop.close()
+        loop.run_until_complete(runner.cleanup())
         sys.exit(1)
+

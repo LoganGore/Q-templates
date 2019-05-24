@@ -1,7 +1,7 @@
 import graphql
 from graphql import build_ast_schema
 from graphql.language.parser import parse
-import graphql
+from aioify import aioify
 import re
 import logging
 import pprint
@@ -9,12 +9,7 @@ import pickle
 import hashlib
 import os
 import time
-import graphql
 import subprocess
-
-# TODO: Have this use memory for performance and use textit to dump to disk
-# BE WARNED - THE ONLY WAY TO FLUSH IS TO RESET THE SERVICE. Do not use with changing data.
-# Persistent is mainly for development help, as it will persist even when yo urestart the service. Be careful.
 
 
 def empty_cache(persistent=False):
@@ -27,7 +22,7 @@ def empty_cache(persistent=False):
     delete_process = subprocess.Popen('rm ' + cache_folder + "/*", shell=True)
     delete_process.wait()
 
-
+# TODO: Have this use memory for performance and use textit to dump to disk
 # https://docs.python.org/3/library/shelve.html <- potential option?
 def cache_query(ttl=3600, persistent=False):
     '''Decorator used for caching intensive queries'''
@@ -87,7 +82,7 @@ def cache_query(ttl=3600, persistent=False):
 
     return decorator
 
-# https://gist.github.com/jasonphillips/d80642fc33d98cb34bad131adfcf6ed8
+# Original before mods: https://gist.github.com/jasonphillips/d80642fc33d98cb34bad131adfcf6ed8
 # accepts schema_definition (string) and resolvers (object) in style of graphql-tools
 # returns a schema ready for execution
 
@@ -95,6 +90,21 @@ def cache_query(ttl=3600, persistent=False):
 def build_executable_schema(schema_definition, resolvers, scalars):
     ast = graphql.parse(schema_definition)
     schema = graphql.build_ast_schema(ast)
+
+    #aioify our resolver functions
+    def aioify_resolvers(node):
+
+        if callable(node):
+            #our leafs
+            return aioify(obj=node)
+
+        for key,value in node.items():                
+            node[key] = aioify_resolvers(value)
+
+        return node  
+
+    #recursively wrap our functions to make them async
+    resolvers = aioify_resolvers(resolvers)
 
     for scalar in scalars:
         type = schema.get_type(scalar)
