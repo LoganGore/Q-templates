@@ -1,1 +1,0 @@
-# maana-q-scalars
