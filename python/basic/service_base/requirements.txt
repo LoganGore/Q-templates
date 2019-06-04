@@ -1,7 +1,7 @@
 aioify==0.3.1
 aiohttp==3.5.4
 aiohttp_cors==0.7.0
-graphql-core-next==1.0.4
+graphql-core-next==1.0.5
 
 python-dotenv==0.8.2
 python-dateutil==2.5.0
@@ -10,3 +10,9 @@ inotify_simple==1.1.8
 #CKG Client
 requests==2.22.0
 auth0-python==3.7.2
+
+#Service stuff
+mysql-connector-python==8.0.16
+pandas==0.24.2
+numpy==1.16.3
+pytz==2019.1

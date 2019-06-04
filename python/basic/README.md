@@ -1,5 +1,6 @@
 
 
+
 # Maana Python 3.7 Template
 
 This template is designed to make quick work of creating new [GraphQL](http://graphql.org) microservices for use inside [Maana Q](https://www.maana.io/knowledge-platform/). It was created by Alexander Elkholy, Almir Alemic, Ashish Juneja and Andrew Spode, members of Maana's Customer Solutions team. 
@@ -199,7 +200,7 @@ To add new packages, as you would using pip, simply add a new entry to **require
 
 ## Watch Mode
 
-Each service has a built in watch mode. This means, when you change your code, the service will **automatically restart** with the new code changes in place, for quick development. *However, should you adjust requirements.txt, or add new services (as above), you will need to terminate (ctrl + c) the running terminal script and re-run the build_and_deploy script.*
+Each service has a built in watch mode. This means, when you change your code, the service will **automatically restart** with the new code changes in place, for quick development. *However, should you add new services (as above), you will need to terminate (ctrl + c) the running terminal script and re-run the build_and_deploy script.*
 
 Although this has been tested on Mac and Linux, it is currently not believed to be working on Windows.
 
@@ -239,19 +240,41 @@ When persistent is switched on, the cache is no longer stored inside the docker 
 
 ### Wiping Cache
 
-Each time the container is restarted, or the watch mode restarts the application, the temporary cache is **wiped automatically**. Persistent cache is never wiped automatically. If you would like to wipe either of the caches, two endpoints are exposed to do so.
+Each time the container is restarted, or the watch mode restarts the application, the temporary cache is **wiped automatically**. Persistent cache is never wiped automatically. If you would like to wipe either of the caches manually, these endpoints are exposed to do so.
 
+*Clears both cache*
+[http://localhost:8001/clearCache](http://localhost:8001/clearCache)
+
+*Clears temporary cache*
 [http://localhost:8001/clearTemporaryCache](http://localhost:8001/clearTemporaryCache)
 
+*Clears persistent cache*
 [http://localhost:8001/clearPersistentCache](http://localhost:8001/clearPersistentCache)
 
 ## Debugging
 
-Each service has a basic debug endpoint, where you can see the last query, how long it took and the payload. You can copy and paste the query/variables directly into GraphiQL for testing queries that might have failed. You will find the [JSON Formatter](https://chrome.google.com/webstore/detail/json-formatter/bcjindcccaagfpapjjmafapmmgkkhgoa/related?hl=en) extension for Google Chrome very useful in making this more human readable. 
+[http://localhost:8001/queryList](http://localhost:8001/queryList)
 
-[http://localhost:8001/debug](http://localhost:8001/debug)
+This endpoint will show all **currently** running queries, as well as the last ten **completed** queries. You will find the [JSON Formatter](https://chrome.google.com/webstore/detail/json-formatter/bcjindcccaagfpapjjmafapmmgkkhgoa/related?hl=en) extension for Google Chrome essential in making this more human readable. 
+
+```
+{"full_information": "[http://localhost:8001/queryInformation/0a974c2a170e0902ff035b9d5c75d392]",
+"query": "{helloWorld(name:"World")",
+"query_time": 5.916,
+"complete": true,
+"response_code": 200,
+"invalid": false,
+"errors": false}
+```
+
+When looking at the query list, you will see basic information about each query and most of the fields are self explanatory. If the query is still running, instead of *query_time* you will see *query_time_so_far*.
+
+Each query has a full_information link. This will take you to a page where you can see the full-sized query, the variables and the data it returned. This can be very useful when testing a failing service, as you can copy/paste this data directly into GraphiQL.
+
 
 ## Azure Kubernetes Service Deployment Steps
+
+*(this section was lifted from a previous version and requires updating - YMMV)*
 
 Docker compose will create docker images for each of your services that can be deployed independently of each other, ideal for deployment on Kubernetes or other container management systems.
 

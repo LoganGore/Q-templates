@@ -1,4 +1,6 @@
 from aiohttp import web
+from aiohttp.abc import AbstractAccessLogger
+
 import aiohttp_cors
 import asyncio
 import os
@@ -13,6 +15,10 @@ from settings import SERVICE_ADDRESS, SERVICE_PORT, PROJECT_ROOT, LOG_LEVEL
 from context import context_vars
 from resolvers import resolvers
 from scalars import scalars
+
+from collections import deque
+import traceback
+import hashlib
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(stream=sys.stdout, level=LOG_LEVEL)
@@ -50,14 +56,33 @@ trimmed = graphql_tools.filter_schema(schema, filtered_set)
 executable_schema = graphql_tools.build_executable_schema(trimmed, resolvers, scalars)
 
 async def init():
-    app = web.Application(client_max_size=52428800)
 
-    # store information here for our /debug endpoint
-    last_request = {}
+    # For our query list
+    running_queries = []
+    complete_queries = deque(maxlen=10)
+
+    # We need to know a query not only completed, but it also sent successfully (i.e no hang)
+    class AccessLogger(AbstractAccessLogger):
+
+        def log(self, request, response, time):
+
+            for query_information in running_queries:
+                if query_information['request'] is request:
+                    query_information['response_code'] = response.status
+                    query_information['complete'] = True
+                    #It's complete so we move it onward
+                    complete_queries.append(query_information)
+                    #This is O(n) which isn't great, but how many concurrent queries are we going to be handling?
+                    running_queries.remove(query_information)
+                    break
+
+            #We might still want this debug info! So pass it through to the normal handler
+            #It doesn't match exactly the standard - I took it from the aiohttp page
+            self.logger.info(f'{request.remote} {request.method} {request.path} done in {time}s: {response.status}')
+
+    app = web.Application(client_max_size=52428800, handler_args={"keepalive_timeout":1200, 'access_log_class' : AccessLogger})
 
     async def graphql(request):
-        query_start = timer()
-
         #If there is no request, it gives a 500
         try:
             back = await request.json()
@@ -72,7 +97,20 @@ async def init():
         if not variables:
             variables = {}
 
-        result = await gql.graphql(executable_schema, query, variable_values=variables, operation_name=operation_name, context_value=context_vars)
+        #A new query/process - ID is just a hash of the timer. Unique enough hopefully.
+        query_information = {
+            "id" : hashlib.md5(str(timer()).encode('utf-8')).hexdigest(),
+            "complete" : False,
+            "query" : query,
+            "variables" : variables,
+            "request" : request
+        }
+
+        #Time our query and add it to our queryList       
+        query_information['start'] = timer()
+        running_queries.append(query_information)
+        result = await gql.graphql(executable_schema, query, variable_values=variables, operation_name=operation_name, context_value=context_vars)       
+        query_information['end'] = timer()
 
         # to store our response in
         data = {}
@@ -80,6 +118,7 @@ async def init():
         # handle any errors
         if result.errors:
             for err in result.errors:
+                print(traceback.format_exc())
                 logger.error("Error: " + str(err))
                 continue
             data['errors'] = [str(err) for err in result.errors]
@@ -87,32 +126,71 @@ async def init():
         if result.data:
             data['data'] = result.data
 
-        query_end = timer()
-
-        # store our debug information
-        last_request['query_time'] = query_end - query_start
-        last_request['request'] = {
-            "query": query,
-            "variables": variables
-        }
-        last_request['data'] = False
-        last_request['errors'] = False
-        last_request['invalid'] = False
+        query_information['data'] = False
+        query_information['errors'] = False
+        query_information['invalid'] = False
 
         if 'errors' in data:
-            last_request['errors'] = data['errors']
+            query_information['errors'] = data['errors']
         if 'invalid' in data:
-            last_request['invalid'] = data['invalid']
+            query_information['invalid'] = data['invalid']
         if 'data' in data:
-            last_request['data'] = data['data']
+            query_information['data'] = data['data']
 
         return web.Response(text=json.dumps(data), headers={'Content-Type': 'application/json'})
 
     async def graphiql(request):
         return web.FileResponse(os.path.join(PROJECT_ROOT, "shared") + "/graphiql/graphiql.html")
 
-    async def debug(request):
-        return web.Response(text=json.dumps(last_request), headers={'Content-Type': 'application/json'})
+    async def queryList(request):
+        result = []
+        now = timer()
+
+        #We are using the same handler for the list and for the information
+        try:
+            id = request.match_info['id']
+        except:
+            id = False
+
+        #This generates a list of running queries and up to 10 of the old queries
+        #We reverse them add them together, running at the top
+        for query in (running_queries[::-1] + list(complete_queries)[::-1]):
+
+            info = {}
+
+            #If there is an id, this is a request for more information, not the entire list
+            if id and not query['id'] == id:
+                continue
+
+            #Which paremeters do we want
+            all_vars = ['complete', 'response_code', 'invalid', 'errors']
+
+            if id:
+                all_vars += ['variables', 'data']
+                info['query'] = query['query']
+            else:
+                info["full_information"] = f"http://{request.host}/queryInformation/{query['id']}"
+                info['query'] = (query['query'][:250] + '(...)') if len(query['query']) > 255 else query['query']
+
+            if 'end' in query:
+                info['query_time'] = round(query['end'] - query['start'],3)
+            else:               
+                info['query_time_so_far'] = round(now - query['start'], 3)            
+           
+            #Copy everything else across
+            for var_name in all_vars:
+                if var_name in query:
+                    info[var_name] = query[var_name]
+
+            
+            result.append(info)
+
+        return web.Response(text=json.dumps(result), headers={'Content-Type': 'application/json'})
+
+    async def clearCache(request):
+        graphql_tools.empty_cache()
+        graphql_tools.empty_cache(persistent=True)
+        return web.Response(text='{"result": "success"}', headers={'Content-Type': 'application/json'})
 
     async def clearTemporaryCache(request):
         graphql_tools.empty_cache()
@@ -131,14 +209,15 @@ async def init():
         )
     })
 
-    #Add our routes to CORS - I'm not sure why this is done beforehand?
-    #TODO: Check this is working, and/or not included in the aiohttp as standard now
+    # Add our routes to CORS
     for route in list(app.router.routes()):
         cors.add(route)
 
     app.router.add_route('*', path='/clearTemporaryCache', handler=clearTemporaryCache)
     app.router.add_route('*', path='/clearPersistentCache', handler=clearPersistentCache)
-    app.router.add_route('*', path='/debug', handler=debug)
+    app.router.add_route('*', path='/clearCache', handler=clearCache)
+    app.router.add_route('*', path='/queryList', handler=queryList)
+    app.router.add_route('*', path='/queryInformation/{id}', handler=queryList)
     app.router.add_route('*', path='/graphql', handler=graphql)
     app.router.add_route('*', path='/graphiql', handler=graphiql)
 
@@ -168,5 +247,6 @@ if __name__ == "__main__":
         loop.run_forever()
     except KeyboardInterrupt:
         loop.run_until_complete(runner.cleanup())
+        loop.close()
         sys.exit(1)
 

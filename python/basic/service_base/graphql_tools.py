@@ -30,6 +30,7 @@ def cache_query(ttl=3600, persistent=False):
     def decorator(original_func):
 
         def new_func(*args, **kwargs):
+
             # Our key is made from the funciton name and the keyword arguments - i.e value and info are ignored
             cache_key = hashlib.md5(original_func.__name__.encode(
                 'utf-8') + pickle.dumps(kwargs)).hexdigest()
@@ -55,16 +56,20 @@ def cache_query(ttl=3600, persistent=False):
                 # If it's younger than our ttl, use it
                 if age < ttl or persistent is True:
                     cached_result = pickle.load(open(tmp_file, 'rb'))
-                    # print(original_func.__name__ + " cache hit.", cache_key)
+                    print(original_func.__name__ + " cache hit.")
             except:
                 pass
 
             if cached_result is False:
                 # Let us know it's a miss
-                print(original_func.__name__ + " cache miss.", cache_key)
+                print(original_func.__name__ + f" cache miss: {cache_key}")
 
                 # run it
+                start = time.time()
                 cached_result = original_func(*args, **kwargs)
+                end = time.time()
+
+                print(original_func.__name__ + f" took {round(end-start)}s: {cache_key}")
 
                 # make sure the directory exists
                 try:

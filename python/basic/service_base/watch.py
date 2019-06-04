@@ -9,6 +9,7 @@ import subprocess
 import os
 import signal
 from inotify_simple import INotify, flags
+import time
 
 #In docker-compose, we have set this as a volume for our source files
 start_dirs = ["/service_source", "/service_base_source"]
@@ -50,9 +51,15 @@ def watch_loop():
 	        #for some reason this triggers more than once, so we'll break out manually
 	        break
 
+	#TODO: Try graceful first before terimate?
+	# shut down gracefully
+	# print("Sending CTRL^C to server.py...");		
+	# process.send_signal(signal.SIGINT)
+	# process.wait()
+
 	#shut down gracefully
-	print("Sending CTRL^C to server.py...");		
-	process.send_signal(signal.SIGINT)
+	print("Killing server.py...");		
+	process.kill()
 	process.wait()
 
 	print("Wiping /app ...")
@@ -66,6 +73,10 @@ def watch_loop():
 	print("Copying service files over...")
 	copy_process = subprocess.Popen('cp /service_source/* /app/. --recursive', shell=True)
 	copy_process.wait()
+
+	print("Installing pip requirements...")
+	pip_process = subprocess.Popen('pip3 install -r requirements.txt --disable-pip-version-check >/dev/null', shell=True)
+	pip_process.wait()
 
 	print("Restarting watch loop...")
 	
