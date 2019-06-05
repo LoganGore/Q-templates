@@ -1,0 +1,13 @@
+type Foo {
+  name: String!
+}
+
+type Query {
+  foo(name: String!): Foo
+  allFoos: [Foo!]!
+}
+
+type Mutation {
+  createFoo(name: String!): Foo!
+  deleteFoo(name: String!): Int!
+}
