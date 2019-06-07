@@ -1,4 +1,0 @@
-schemaPath: src/graphql/schema.graphql
-extensions:
-  endpoints:
-    default: 'http://localhost:4000'
