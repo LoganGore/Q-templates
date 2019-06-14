@@ -385,7 +385,7 @@ def get_all_types_from_query_and_mutation(schema):
 
     '''Extract the types used in arguments in all query + mutation functions'''
     types_in_argument = parse_arguments(
-        queries).union(parse_return_types(mutation))
+        queries).union(parse_arguments(mutation))
 
     return return_types.union(types_in_argument).union(set(["Query", "Mutation"]))
 
